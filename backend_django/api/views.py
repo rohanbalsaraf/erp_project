@@ -2,8 +2,15 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Student, Faculty, Attendance
-from .serializers import StudentSerializer, AttendanceSerializer, TimetableSerializer, NotificationSerializer, FacultySerializer
+from .models import Student, Faculty, Attendance, Notification, Timetable, Result
+from .serializers import (
+    StudentSerializer, 
+    AttendanceSerializer, 
+    TimetableSerializer, 
+    NotificationSerializer, 
+    FacultySerializer,
+    ResultSerializer
+)
 
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -88,3 +95,18 @@ class TimetableListView(generics.ListAPIView):
         if dept:
             return Timetable.objects.filter(department=dept)
         return Timetable.objects.all()
+
+class ResultListView(generics.ListAPIView):
+    queryset = Result.objects.all()
+    serializer_class = ResultSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        try:
+            student = Student.objects.get(user=user)
+            return Result.objects.filter(student=student)
+        except Student.DoesNotExist:
+            if user.is_staff:
+                return Result.objects.all()
+            return Result.objects.none()

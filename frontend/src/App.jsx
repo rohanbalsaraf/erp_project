@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, UserCog, Bell, Calendar, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, UserCog, Bell, Calendar, LogOut, Menu, X, Award } from 'lucide-react'
 import Login from './pages/Login'
 import StudentsList from './pages/StudentsList'
 import AttendanceTracking from './pages/AttendanceTracking'
 import FacultyManagement from './pages/FacultyManagement'
 import NoticeBoard from './pages/NoticeBoard'
 import Timetable from './pages/Timetable'
+import ResultsView from './pages/ResultsView'
 import api from './services/api'
 
 // Simple Dashboard Component
@@ -89,6 +90,7 @@ function AppContent() {
             { icon: <Calendar size={20} />, label: 'Attendance', path: '/attendance' },
             { icon: <Bell size={20} />, label: 'Notifications', path: '/notifications' },
             { icon: <Calendar size={20} />, label: 'Timetable', path: '/timetable' },
+            { icon: <Award size={20} />, label: 'Results', path: '/results' },
           ].map((item) => (
             <Link
               key={item.label}
@@ -129,6 +131,7 @@ function AppContent() {
             <Route path="/faculty" element={<FacultyManagement />} />
             <Route path="/notifications" element={<NoticeBoard user={user} />} />
             <Route path="/timetable" element={<Timetable />} />
+            <Route path="/results" element={<ResultsView />} />
           </Routes>
         </main>
       </div>

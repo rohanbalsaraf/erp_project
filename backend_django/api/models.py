@@ -51,3 +51,14 @@ class Notification(models.Model):
     
     def __str__(self):
         return self.title
+
+class Result(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='results')
+    semester = models.IntegerField()
+    subject = models.CharField(max_length=100)
+    marks = models.IntegerField()
+    grade = models.CharField(max_length=5)
+    date = models.DateField()
+
+    def __str__(self):
+        return f"{self.student.name} - Sem {self.semester} - {self.subject}"

@@ -15,4 +15,5 @@ urlpatterns = [
     path('faculty/', FacultyListView.as_view(), name='faculty-list'),
     path('notifications/', NotificationListView.as_view(), name='notification-list'),
     path('timetable/', TimetableListView.as_view(), name='timetable-list'),
+    path('results/', ResultListView.as_view(), name='result-list'),
 ]
