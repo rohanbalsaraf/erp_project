@@ -62,8 +62,12 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onBackPressed,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _onBackPressed();
+      },
       child: Scaffold(
         body: Container(
           decoration: BoxDecoration(

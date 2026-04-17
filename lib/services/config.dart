@@ -9,4 +9,7 @@ class AppConfig {
   static String getAttendance(String studentId) => '$baseUrl/attendance/$studentId';
   static String getTimetable(String dept) => '$baseUrl/timetable/$dept';
   static const String notifications = '$baseUrl/notifications';
+
+  // Third Party APIs
+  static const String huggingFaceApiKey = 'YOUR_HUGGING_FACE_API_KEY'; // Placeholder
 }

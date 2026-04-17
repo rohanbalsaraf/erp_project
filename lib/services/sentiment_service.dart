@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'config.dart';
 
 class SentimentService {
   static const String apiUrl =
       'https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english';
-  static const String apiKey = 'YOUR_HUGGING_FACE_API_KEY'; // Replace with your API key
+  static const String apiKey = AppConfig.huggingFaceApiKey;
 
   Future<Map<String, dynamic>> analyzeSentiment(String text) async {
     try {
