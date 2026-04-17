@@ -6,8 +6,9 @@ bcrypt
 pydantic[email]
 python-multipart
 google-cloud-dialogflow
-dotenv
+python-dotenv
 flask
 aiosmtplib
 transformers==4.45.2
 torch==2.4.1
+python-jose[cryptography]

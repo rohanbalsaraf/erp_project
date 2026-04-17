@@ -17,11 +17,17 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import PyMongoError
 from bson.objectid import ObjectId
 import shutil
+from dotenv import load_dotenv
+from jose import JWTError, jwt
+from datetime import timedelta
+
+# Load environment variables
+load_dotenv()
 
 # Initialize FastAPI
 app = FastAPI()
 
-# Enable CORS
+# Enable CORS (Should be restricted in production)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,14 +36,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configuration from Environment Variables
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+DB_NAME = os.getenv("DB_NAME", "studentERP")
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SMTP_EMAIL = os.getenv("SMTP_EMAIL")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+
 # Configure Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # MongoDB Connection
 try:
-    client = AsyncIOMotorClient('mongodb://localhost:27017')
-    db = client['studentERP']
+    client = AsyncIOMotorClient(MONGO_URI)
+    db = client[DB_NAME]
     admins_collection = db['admins']
     admissions_collection = db['admissions']
     students_collection = db['students']
@@ -54,12 +71,6 @@ except Exception as e:
 UPLOAD_FOLDER = 'Uploads'
 ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# SMTP Configuration
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-SMTP_EMAIL = "balsarafrohan627@gmail.com"  # Replace with your email
-SMTP_PASSWORD = "zobi sxvl pjfv cneu"  # Replace with your app-specific password
 
 # Pydantic Models
 class AdminSignup(BaseModel):
@@ -184,6 +195,23 @@ def hash_password(password: str) -> str:
 def verify_password(stored_password: str, provided_password: str) -> bool:
     return check_password_hash(stored_password, provided_password)
 
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def decode_access_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None
+
 async def generate_student_id(department: str, division: str) -> tuple[str, int]:
     clg_code = "4088"
     today = datetime.now().strftime("%d%m%Y")
@@ -248,6 +276,8 @@ async def admit_student(data: StudentAdmit):
         "form_link": form_link,
         "form_completed": False,
         "roll_no": roll_no,
+        "password": hash_password(student_id),  # Default password is student_id
+        "role": "student",
         "created_at": datetime.utcnow()
     }
     await students_collection.insert_one(new_student)
@@ -606,12 +636,19 @@ async def get_faculty():
 # Student Login
 @app.post("/student_login")
 async def student_login(data: StudentLogin):
-    student1 = await admissions_collection.find_one({"studentId": data.student_id})
     student = await students_collection.find_one({"email": data.email})
-    if not student1:
-        raise HTTPException(status_code=401, detail="Incorrect ID")
-    if data.password != data.student_id:  # Simplified password check
-        raise HTTPException(status_code=401, detail="Password must match Student ID")
+    if not student:
+        raise HTTPException(status_code=401, detail="Student not found with this email")
+    
+    if student["student_id"] != data.student_id:
+        raise HTTPException(status_code=401, detail="Incorrect Student ID")
+
+    if not verify_password(student.get("password"), data.password):
+        raise HTTPException(status_code=401, detail="Incorrect password")
+
+    student_admission = await admissions_collection.find_one({"studentId": data.student_id})
+    
+    access_token = create_access_token(data={"sub": student["email"], "role": "student"})
 
     def to_string(value):
         if isinstance(value, list) and len(value) > 0:
@@ -619,15 +656,18 @@ async def student_login(data: StudentLogin):
         return value if value is not None else "N/A"
 
     return {
+        "status": "success",
+        "access_token": access_token,
+        "token_type": "bearer",
         "student": {
-            "student_id": to_string(student1.get("studentId")),
-            "name": to_string(student1.get("name", "Unknown")),
-            "address": to_string(student1.get("address")),
-            "fathers_name": to_string(student1.get("fatherName")),
-            "mothers_name": to_string(student1.get("motherName")),
-            "marks_10": to_string(student1.get("marks10")),
-            "marks_12": to_string(student1.get("marks12")),
-            "email": to_string(student.get("email")),
+            "student_id": student["student_id"],
+            "name": to_string(student_admission.get("name") if student_admission else "Unknown"),
+            "address": to_string(student_admission.get("address") if student_admission else "N/A"),
+            "fathers_name": to_string(student_admission.get("fatherName") if student_admission else "N/A"),
+            "mothers_name": to_string(student_admission.get("motherName") if student_admission else "N/A"),
+            "marks_10": to_string(student_admission.get("marks10") if student_admission else "N/A"),
+            "marks_12": to_string(student_admission.get("marks12") if student_admission else "N/A"),
+            "email": student["email"],
             "department": to_string(student.get("department")),
         }
     }
