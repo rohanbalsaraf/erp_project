@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'student_profile.dart';
 import 'document_upload.dart';
 import 'student_result_upload.dart';
+import '../services/api_handler.dart';
+import '../services/config.dart';
 
 class StudentDashboard extends StatefulWidget {
   final Map<String, dynamic> student;
@@ -209,7 +211,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       _buildDashboardContent(),
-      TimetablePage(),
+      _buildDashboardContent(),
+      TimetablePage(department: widget.student['department'].toString()),
       AssignmentCompletionPage(),
       NotificationBoxPage(),
       DocumentUpload(student: widget.student),
@@ -519,19 +522,40 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 }
 
-class TimetablePage extends StatelessWidget {
-  final List<Map<String, String>> timetable = [
-    {'day': 'Monday', 'time': '9:00 AM - 10:00 AM', 'course': 'DL', 'room': 'A-101'},
-    {'day': 'Monday', 'time': '10:15 AM - 11:15 AM', 'course': 'ML', 'room': 'B-202'},
-    {'day': 'Tuesday', 'time': '9:00 AM - 10:00 AM', 'course': 'BT', 'room': 'C-303'},
-    {'day': 'Tuesday', 'time': '10:15 AM - 11:15 AM', 'course': 'SDN', 'room': 'A-102'},
-    {'day': 'Wednesday', 'time': '9:00 AM - 10:00 AM', 'course': 'BI', 'room': 'A-101'},
-    {'day': 'Thursday', 'time': '9:00 AM - 10:00 AM', 'course': 'HPC', 'room': 'B-202'},
-    {'day': 'Friday', 'time': '9:00 AM - 10:00 AM', 'course': 'DL', 'room': 'C-303'},
-  ];
+class TimetablePage extends StatefulWidget {
+  final String department;
+  const TimetablePage({super.key, required this.department});
+
+  @override
+  State<TimetablePage> createState() => _TimetablePageState();
+}
+
+class _TimetablePageState extends State<TimetablePage> {
+  List<dynamic> _timetable = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTimetable();
+  }
+
+  Future<void> _fetchTimetable() async {
+    final response = await ApiHandler.get(AppConfig.getTimetable(widget.department));
+    if (response['status'] == 'success') {
+      setState(() {
+        _timetable = response['timetable'];
+        _isLoading = false;
+      });
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -558,7 +582,7 @@ class TimetablePage extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  children: timetable.map((entry) {
+                  children: _timetable.map((entry) {
                     return ListTile(
                       leading: Icon(Icons.schedule, color: Theme.of(context).primaryColor),
                       title: Text(
@@ -650,16 +674,39 @@ class AssignmentCompletionPage extends StatelessWidget {
   }
 }
 
-class NotificationBoxPage extends StatelessWidget {
-  final List<Map<String, String>> notifications = [
-    {'title': 'Exam Schedule Released', 'message': 'Mid-term exams start on June 25, 2025.', 'date': '2025-06-10'},
-    {'title': 'Assignment Reminder', 'message': 'Math Assignment 1 due on June 15, 2025.', 'date': '2025-06-08'},
-    {'title': 'Campus Event', 'message': 'Tech Fest on June 20, 2025. Register now!', 'date': '2025-06-07'},
-    {'title': 'Library Notice', 'message': 'Return overdue books by June 12, 2025.', 'date': '2025-06-06'},
-  ];
+class NotificationBoxPage extends StatefulWidget {
+  const NotificationBoxPage({super.key});
+
+  @override
+  State<NotificationBoxPage> createState() => _NotificationBoxPageState();
+}
+
+class _NotificationBoxPageState extends State<NotificationBoxPage> {
+  List<dynamic> _notifications = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchNotifications();
+  }
+
+  Future<void> _fetchNotifications() async {
+    final response = await ApiHandler.get(AppConfig.notifications);
+    if (response['status'] == 'success') {
+      setState(() {
+        _notifications = response['notifications'];
+        _isLoading = false;
+      });
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -686,7 +733,7 @@ class NotificationBoxPage extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  children: notifications.map((notification) {
+                  children: _notifications.map((notification) {
                     return ListTile(
                       leading: Icon(Icons.notifications, color: Theme.of(context).primaryColor),
                       title: Text(
@@ -713,19 +760,35 @@ class NotificationBoxPage extends StatelessWidget {
   }
 }
 
-class AttendanceDetailPage extends StatelessWidget {
+class AttendanceDetailPage extends StatefulWidget {
   final String studentId;
-  final List<Map<String, dynamic>> attendanceRecords = [
-    {'date': '2025-06-01', 'course': 'DL', 'status': 'Present', 'time': '9:00 AM - 10:00 AM'},
-    {'date': '2025-06-01', 'course': 'ML', 'status': 'Absent', 'time': '10:15 AM - 11:15 AM'},
-    {'date': '2025-06-02', 'course': 'BT', 'status': 'Present', 'time': '9:00 AM - 10:00 AM'},
-    {'date': '2025-06-02', 'course': 'SDN', 'status': 'Present', 'time': '10:15 AM - 11:15 AM'},
-    {'date': '2025-06-03', 'course': 'BI', 'status': 'Present', 'time': '9:00 AM - 10:00 AM'},
-    {'date': '2025-06-04', 'course': 'HPC', 'status': 'Absent', 'time': '9:00 AM - 10:00 AM'},
-    {'date': '2025-06-05', 'course': 'DL', 'status': 'Present', 'time': '9:00 AM - 10:00 AM'},
-  ];
+  const AttendanceDetailPage({super.key, required this.studentId});
 
-  AttendanceDetailPage({required this.studentId});
+  @override
+  State<AttendanceDetailPage> createState() => _AttendanceDetailPageState();
+}
+
+class _AttendanceDetailPageState extends State<AttendanceDetailPage> {
+  List<dynamic> _attendanceRecords = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAttendance();
+  }
+
+  Future<void> _fetchAttendance() async {
+    final response = await ApiHandler.get(AppConfig.getAttendance(widget.studentId));
+    if (response['status'] == 'success') {
+      setState(() {
+        _attendanceRecords = response['attendance'];
+        _isLoading = false;
+      });
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -734,62 +797,64 @@ class AttendanceDetailPage extends StatelessWidget {
         title: const Text('Attendance Details'),
         backgroundColor: Theme.of(context).primaryColor,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Attendance Records',
-                style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Detailed attendance history',
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 24),
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: attendanceRecords.map((record) {
-                      return ListTile(
-                        leading: Icon(
-                          record['status'] == 'Present' ? Icons.check_circle : Icons.cancel,
-                          color: record['status'] == 'Present' ? Colors.green : Colors.red,
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Attendance Records',
+                    style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
-                        title: Text(
-                          '${record['course']}',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          '${record['date']} | ${record['time']}',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                        ),
-                        trailing: Text(
-                          record['status'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: record['status'] == 'Present' ? Colors.green : Colors.red,
-                          ),
-                        ),
-                      );
-                    }).toList(),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Detailed attendance history',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 24),
+                  Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: _attendanceRecords.map((record) {
+                          return ListTile(
+                            leading: Icon(
+                              record['status'] == 'Present' ? Icons.check_circle : Icons.cancel,
+                              color: record['status'] == 'Present' ? Colors.green : Colors.red,
+                            ),
+                            title: Text(
+                              '${record['course']}',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              '${record['date']} | ${record['time']}',
+                              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                            ),
+                            trailing: Text(
+                              record['status'],
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: record['status'] == 'Present' ? Colors.green : Colors.red,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 }

@@ -51,18 +51,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# MongoDB Connection
-try:
-    client = AsyncIOMotorClient(MONGO_URI)
-    db = client[DB_NAME]
-    admins_collection = db['admins']
-    admissions_collection = db['admissions']
-    students_collection = db['students']
-    payments_collection = db['payments']
-    queries_collection = db['document_queries']
-    faculty_collection = db['faculty_db']
-    documents_collection = db['documents']
     results_collection = db['results']
+    attendance_collection = db['attendance']
+    timetable_collection = db['timetable']
+    notifications_collection = db['notifications']
     logger.info("✅ MongoDB connected successfully!")
 except Exception as e:
     logger.error(f"❌ MongoDB connection failed: {e}")
@@ -821,6 +813,51 @@ async def get_student_results(student_id: str):
     except PyMongoError as e:
         logger.error(f"MongoDB error fetching results: {e}")
         raise HTTPException(status_code=500, detail="Database error")
+
+# Dynamic ERP Features Routes
+
+@app.get("/attendance/{student_id}")
+async def get_attendance(student_id: str):
+    cursor = attendance_collection.find({"student_id": student_id}, {"_id": 0})
+    records = []
+    async for record in cursor:
+        records.append(normalize_data(record))
+    
+    # If no records, return some mock normalized data for initial setup
+    if not records:
+        records = [
+            {'date': '2025-06-01', 'course': 'DL', 'status': 'Present', 'time': '9:00 AM - 10:00 AM', 'student_id': student_id},
+            {'date': '2025-06-01', 'course': 'ML', 'status': 'Absent', 'time': '10:15 AM - 11:15 AM', 'student_id': student_id},
+        ]
+    return {"status": "success", "attendance": records}
+
+@app.get("/timetable/{department}")
+async def get_timetable(department: str):
+    cursor = timetable_collection.find({"department": department.upper()}, {"_id": 0})
+    timetable = []
+    async for entry in cursor:
+        timetable.append(normalize_data(entry))
+    
+    if not timetable:
+        timetable = [
+            {'day': 'Monday', 'time': '9:00 AM - 10:00 AM', 'course': 'DL', 'room': 'A-101', 'department': department.upper()},
+            {'day': 'Monday', 'time': '10:15 AM - 11:15 AM', 'course': 'ML', 'room': 'B-202', 'department': department.upper()},
+        ]
+    return {"status": "success", "timetable": timetable}
+
+@app.get("/notifications")
+async def get_notifications():
+    cursor = notifications_collection.find({}, {"_id": 0}).sort("date", -1).limit(20)
+    notifications = []
+    async for note in cursor:
+        notifications.append(normalize_data(note))
+    
+    if not notifications:
+        notifications = [
+            {'title': 'Exam Schedule Released', 'message': 'Mid-term exams start on June 25, 2025.', 'date': '2025-06-10'},
+            {'title': 'Campus Event', 'message': 'Tech Fest on June 20, 2025. Register now!', 'date': '2025-06-07'},
+        ]
+    return {"status": "success", "notifications": notifications}
 
 # Test Route
 @app.get("/test")

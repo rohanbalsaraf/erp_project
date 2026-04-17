@@ -5,5 +5,8 @@ class AppConfig {
   // API Endpoints
   static const String adminLogin = '$baseUrl/admin_login';
   static const String studentLogin = '$baseUrl/student_login';
-  // ... more can be added here
+  
+  static String getAttendance(String studentId) => '$baseUrl/attendance/$studentId';
+  static String getTimetable(String dept) => '$baseUrl/timetable/$dept';
+  static const String notifications = '$baseUrl/notifications';
 }
