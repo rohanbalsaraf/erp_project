@@ -11,32 +11,103 @@ import ResultsView from './pages/ResultsView'
 import api from './services/api'
 
 // Simple Dashboard Component
-const DashboardHome = ({ user }) => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-800 mb-6">Welcome, {user?.username}</h1>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-        <div className="flex items-center justify-between mb-4">
-          <div className="p-3 bg-indigo-50 rounded-lg">
-            <Users className="w-6 h-6 text-indigo-600" />
-          </div>
+const DashboardHome = ({ user }) => {
+  const [stats, setStats] = useState({ present: 85, absent: 15, marks: 78 });
+  
+  return (
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+        <div>
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">System Overview</h1>
+          <p className="text-gray-500 mt-2 font-medium">Hello, {user?.username}. Here's what's happening today.</p>
         </div>
-        <h3 className="text-gray-500 text-sm font-medium">Role</h3>
-        <p className="text-2xl font-bold text-gray-900 capitalize">{user?.role}</p>
+        <div className="mt-4 md:mt-0 flex items-center space-x-3 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100">
+          <span className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-sm">Session 2024-25</span>
+        </div>
       </div>
-      
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-        <div className="flex items-center justify-between mb-4">
-          <div className="p-3 bg-pink-50 rounded-lg">
-            <Calendar className="w-6 h-6 text-pink-600" />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        {/* Main Stats Card */}
+        <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden">
+          <div className="relative z-10">
+            <h3 className="text-xl font-bold text-gray-900 mb-8">Attendance Performance</h3>
+            <div className="flex items-end space-x-4 h-48">
+              {[60, 85, 45, 90, 75, 80, 95].map((val, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center group">
+                  <div className="w-full bg-indigo-50 rounded-2xl relative overflow-hidden h-full group-hover:bg-indigo-100 transition-colors">
+                    <div 
+                      className="absolute bottom-0 left-0 w-full bg-indigo-600 rounded-2xl transition-all duration-1000 ease-out"
+                      style={{ height: `${val}%` }}
+                    >
+                      <div className="absolute top-2 left-0 w-full text-center text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        {val}%
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-gray-400 mt-3 group-hover:text-indigo-600 transition-colors">
+                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl -z-0"></div>
+        </div>
+
+        {/* Circular Progress Card */}
+        <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-xl text-white relative overflow-hidden">
+          <h3 className="text-xl font-bold mb-8">Semester Goal</h3>
+          <div className="flex flex-col items-center justify-center space-y-6">
+            <div className="relative w-40 h-40">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="80" cy="80" r="70"
+                  fill="transparent"
+                  stroke="rgba(255,255,255,0.1)"
+                  strokeWidth="12"
+                />
+                <circle
+                  cx="80" cy="80" r="70"
+                  fill="transparent"
+                  stroke="white"
+                  strokeWidth="12"
+                  strokeDasharray="440"
+                  strokeDashoffset={440 - (440 * 78) / 100}
+                  strokeLinecap="round"
+                  className="transition-all duration-1000 ease-out"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-4xl font-black">78%</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Complete</span>
+              </div>
+            </div>
+            <p className="text-center text-sm font-medium opacity-80 leading-relaxed">
+              You are 12% ahead of last month's academic performance.
+            </p>
           </div>
         </div>
-        <h3 className="text-gray-500 text-sm font-medium">Department</h3>
-        <p className="text-2xl font-bold text-gray-900">{user?.profile?.department || 'N/A'}</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { icon: <Users className="text-indigo-600" />, label: 'Department', value: user?.profile?.department || 'N/A', bg: 'bg-indigo-50' },
+          { icon: <BarChart3 className="text-pink-600" />, label: 'Avg Attendance', value: '88%', bg: 'bg-pink-50' },
+          { icon: <Award className="text-orange-600" />, label: 'Credits Earned', value: '24', bg: 'bg-orange-50' },
+          { icon: <Bell className="text-green-600" />, label: 'Unread Alerts', value: '3', bg: 'bg-green-50' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+            <div className={`p-3 w-fit rounded-2xl mb-4 ${stat.bg}`}>
+              {stat.icon}
+            </div>
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">{stat.label}</p>
+            <p className="text-2xl font-black text-gray-900 mt-1">{stat.value}</p>
+          </div>
+        ))}
       </div>
     </div>
-  </div>
-)
+  )
+}
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('access_token');
