@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/config.dart';
 
 class StudentLoginPage extends StatefulWidget {
   const StudentLoginPage({super.key});
@@ -57,7 +56,7 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
       _errorMessage = null;
     });
 
-    final uri = Uri.parse('http://127.0.0.1:5000/student_login');
+    final uri = Uri.parse(AppConfig.studentLogin);
     try {
       final response = await http.post(
         uri,

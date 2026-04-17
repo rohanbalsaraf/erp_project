@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/config.dart';
 
 import 'admin_signup.dart';
 import 'admin_dashboard.dart';
@@ -28,7 +27,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     String employeeId = employeeIdController.text.trim();
     String password = passwordController.text.trim();
 
-    final url = 'http://localhost:5000/admin_login'; // API URL
+    final url = AppConfig.adminLogin; // API URL
 
     try {
       final response = await http.post(
