@@ -212,6 +212,25 @@ def decode_access_token(token: str):
     except JWTError:
         return None
 
+def normalize_data(data):
+    """Ensure MongoDB documents have clean, serializable types and flatten single-item lists."""
+    if isinstance(data, list):
+        return [normalize_data(item) for item in data]
+    if isinstance(data, dict):
+        new_dict = {}
+        for k, v in data.items():
+            # Flatten lists for fields known to sometimes be returned as lists by MongoDB or ingestion scripts
+            if isinstance(v, list) and len(v) == 1 and k in ['name', 'email', 'department', 'student_id', 'studentId', 'address', 'fatherName', 'motherName']:
+                new_dict[k] = normalize_data(v[0])
+            else:
+                new_dict[k] = normalize_data(v)
+        return new_dict
+    if isinstance(data, datetime):
+        return data.isoformat()
+    if isinstance(data, ObjectId):
+        return str(data)
+    return data
+
 async def generate_student_id(department: str, division: str) -> tuple[str, int]:
     clg_code = "4088"
     today = datetime.now().strftime("%d%m%Y")
@@ -314,7 +333,7 @@ async def get_student_data(student_id: str):
     student = await students_collection.find_one({"student_id": student_id}, {"_id": 0})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    return {"status": "success", "student": student}
+    return {"status": "success", "student": normalize_data(student)}
 
 @app.post("/pay_fees")
 async def pay_fees(data: PayFees):
@@ -659,7 +678,7 @@ async def student_login(data: StudentLogin):
         "status": "success",
         "access_token": access_token,
         "token_type": "bearer",
-        "student": {
+        "student": normalize_data({
             "student_id": student["student_id"],
             "name": to_string(student_admission.get("name") if student_admission else "Unknown"),
             "address": to_string(student_admission.get("address") if student_admission else "N/A"),
@@ -669,7 +688,7 @@ async def student_login(data: StudentLogin):
             "marks_12": to_string(student_admission.get("marks12") if student_admission else "N/A"),
             "email": student["email"],
             "department": to_string(student.get("department")),
-        }
+        })
     }
 
 # Admission Form Routes

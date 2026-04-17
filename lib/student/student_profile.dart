@@ -6,15 +6,7 @@ class StudentProfile extends StatelessWidget {
   const StudentProfile({super.key, required this.student});
 
   String getStringValue(dynamic value) {
-    if (value is String) {
-      return value;
-    } else if (value is List && value.isNotEmpty) {
-      return value[0].toString();
-    } else if (value == null) {
-      return 'N/A';
-    } else {
-      return value.toString();
-    }
+    return value?.toString() ?? 'N/A';
   }
 
   @override

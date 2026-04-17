@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../services/config.dart';
+import '../services/api_handler.dart';
 
 class StudentLoginPage extends StatefulWidget {
   const StudentLoginPage({super.key});
@@ -17,36 +18,7 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
   String? _errorMessage;
   bool _obscurePassword = true;
 
-  // Helper function to parse student data and convert lists to strings
-  Map<String, dynamic> parseStudentData(Map<String, dynamic> data) {
-    return {
-      'name': data['name'] is List && data['name'].isNotEmpty
-          ? data['name'][0].toString()
-          : data['name']?.toString() ?? 'N/A',
-      'student_id': data['student_id']?.toString() ?? 'N/A',
-      'email': data['email'] is List && data['email'].isNotEmpty
-          ? data['email'][0].toString()
-          : data['email']?.toString() ?? 'N/A',
-      'department': data['department'] is List && data['department'].isNotEmpty
-          ? data['department'][0].toString()
-          : data['department']?.toString() ?? 'N/A',
-      'address': data['address'] is List && data['address'].isNotEmpty
-          ? data['address'][0].toString()
-          : data['address']?.toString() ?? 'N/A',
-      'fathers name': data['fathers name'] is List && data['fathers name'].isNotEmpty
-          ? data['fathers name'][0].toString()
-          : data['fathers name']?.toString() ?? 'N/A',
-      'mothers name': data['mothers name'] is List && data['mothers name'].isNotEmpty
-          ? data['mothers name'][0].toString()
-          : data['mothers name']?.toString() ?? 'N/A',
-      '10th marks': data['10th marks'] is List && data['10th marks'].isNotEmpty
-          ? data['10th marks'][0].toString()
-          : data['10th marks']?.toString() ?? 'N/A',
-      '12th marks': data['12th marks'] is List && data['12th marks'].isNotEmpty
-          ? data['12th marks'][0].toString()
-          : data['12th marks']?.toString() ?? 'N/A',
-    };
-  }
+  // Removed parseStudentData as backend now normalizes data
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -56,40 +28,30 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
       _errorMessage = null;
     });
 
-    final uri = Uri.parse(AppConfig.studentLogin);
-    try {
-      final response = await http.post(
-        uri,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({
-          "student_id": _studentIdController.text.trim(),
-          "password": _passwordController.text,
-          "email": _emailController.text.trim(),
-        }),
-      );
+    final response = await ApiHandler.post(
+      AppConfig.studentLogin,
+      {
+        "student_id": _studentIdController.text.trim(),
+        "password": _passwordController.text,
+        "email": _emailController.text.trim(),
+      },
+    );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print('API response student data: ${data['student']}');
-        Navigator.pushReplacementNamed(
-          context,
-          '/student_dashboard',
-          arguments: parseStudentData(data['student']),
-        );
-      } else {
-        setState(() {
-          _errorMessage = json.decode(response.body)['detail'] ?? 'Login failed';
-        });
-      }
-    } catch (e) {
+    if (response['status'] == 'success') {
+      Navigator.pushReplacementNamed(
+        context,
+        '/student_dashboard',
+        arguments: response['student'],
+      );
+    } else {
       setState(() {
-        _errorMessage = 'An error occurred: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
+        _errorMessage = response['message'] ?? 'Login failed';
       });
     }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   // Navigate to root route (/) when back button is pressed

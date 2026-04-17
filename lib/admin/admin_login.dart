@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../services/config.dart';
+import '../services/api_handler.dart';
 
 import 'admin_signup.dart';
 import 'admin_dashboard.dart';
@@ -27,37 +28,28 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     String employeeId = employeeIdController.text.trim();
     String password = passwordController.text.trim();
 
-    final url = AppConfig.adminLogin; // API URL
+    final response = await ApiHandler.post(
+      AppConfig.adminLogin,
+      {
+        "employee_id": employeeId,
+        "password": password,
+      },
+    );
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({
-          "employee_id": employeeId,
-          "password": password,
-        }),
-      );
-
-      final responseBody = json.decode(response.body);
-
-      if (response.statusCode == 200) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AdminDashboard(
-              employeeId: employeeId, // Pass employee ID to dashboard
-            ),
+    if (response['status'] == 'success') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AdminDashboard(
+            employeeId: employeeId,
           ),
-        );
-      } else {
-        _showErrorSnackBar(responseBody['detail'] ?? "Invalid credentials");
-      }
-    } catch (e) {
-      _showErrorSnackBar("Network error! Please try again.");
-    } finally {
-      setState(() => _isLoading = false);
+        ),
+      );
+    } else {
+      _showErrorSnackBar(response['message'] ?? "Invalid credentials");
     }
+
+    setState(() => _isLoading = false);
   }
 
   // Show Error SnackBar
