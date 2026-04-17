@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, UserCog, Bell, Calendar, LogOut, Menu, X } from
 import Login from './pages/Login'
 import StudentsList from './pages/StudentsList'
 import AttendanceTracking from './pages/AttendanceTracking'
+import FacultyManagement from './pages/FacultyManagement'
 import api from './services/api'
 
 // Simple Dashboard Component
@@ -122,7 +123,7 @@ function AppContent() {
             <Route path="/" element={<DashboardHome user={user} />} />
             <Route path="/students" element={<StudentsList />} />
             <Route path="/attendance" element={<AttendanceTracking user={user} />} />
-            <Route path="/faculty" element={<div className="p-6">Faculty Management Coming Soon</div>} />
+            <Route path="/faculty" element={<FacultyManagement />} />
           </Routes>
         </main>
       </div>

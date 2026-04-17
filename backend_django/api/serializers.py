@@ -23,6 +23,22 @@ class AttendanceSerializer(serializers.ModelSerializer):
         model = Attendance
         fields = '__all__'
 
+class FacultySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Faculty
+        fields = '__all__'
+        extra_kwargs = {'user': {'read_only': True}}
+
+    def create(self, validated_data):
+        employee_id = validated_data.get('employee_id')
+        user = User.objects.create_user(
+            username=employee_id,
+            email=validated_data.get('email'),
+            password=f"{employee_id}123"
+        )
+        validated_data['user'] = user
+        return super().create(validated_data)
+
 class TimetableSerializer(serializers.ModelSerializer):
     class Meta:
         model = Timetable

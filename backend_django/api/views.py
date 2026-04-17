@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Student, Faculty, Attendance
-from .serializers import StudentSerializer, AttendanceSerializer, TimetableSerializer, NotificationSerializer
+from .serializers import StudentSerializer, AttendanceSerializer, TimetableSerializer, NotificationSerializer, FacultySerializer
 
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -56,3 +56,8 @@ class AttendanceListView(generics.ListCreateAPIView):
             return Attendance.objects.filter(student=student)
         except Student.DoesNotExist:
             return Attendance.objects.none()
+
+class FacultyListView(generics.ListCreateAPIView):
+    queryset = Faculty.objects.all()
+    serializer_class = FacultySerializer
+    permission_classes = [IsAuthenticated]
