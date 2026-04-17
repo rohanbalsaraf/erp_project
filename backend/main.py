@@ -145,6 +145,10 @@ class ResultUpload(BaseModel):
     semester: str
     exam_type: str
 
+class NotificationPost(BaseModel):
+    title: str
+    message: str
+
 class ResultVerification(BaseModel):
     result_id: str
     status: str  # "approved" or "rejected"
@@ -858,6 +862,16 @@ async def get_notifications():
             {'title': 'Campus Event', 'message': 'Tech Fest on June 20, 2025. Register now!', 'date': '2025-06-07'},
         ]
     return {"status": "success", "notifications": notifications}
+
+@app.post("/notifications")
+async def post_notification(data: NotificationPost):
+    new_note = {
+        "title": data.title,
+        "message": data.message,
+        "date": datetime.now().strftime("%Y-%m-%d")
+    }
+    await notifications_collection.insert_one(new_note)
+    return {"status": "success", "message": "Notification posted successfully"}
 
 # Test Route
 @app.get("/test")
