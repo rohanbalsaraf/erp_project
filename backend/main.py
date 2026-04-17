@@ -51,6 +51,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# MongoDB Connection
+try:
+    client = AsyncIOMotorClient(MONGO_URI)
+    db = client[DB_NAME]
+    admins_collection = db['admins']
+    admissions_collection = db['admissions']
+    students_collection = db['students']
+    payments_collection = db['payments']
+    queries_collection = db['document_queries']
+    faculty_collection = db['faculty_db']
+    documents_collection = db['documents']
     results_collection = db['results']
     attendance_collection = db['attendance']
     timetable_collection = db['timetable']

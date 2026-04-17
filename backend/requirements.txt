@@ -11,4 +11,4 @@ flask
 aiosmtplib
 transformers==4.45.2
 torch==2.4.1
-python-jose[cryptography]
+python-jose[cryptography]werkzeug
