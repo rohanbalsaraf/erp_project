@@ -5,6 +5,8 @@ import Login from './pages/Login'
 import StudentsList from './pages/StudentsList'
 import AttendanceTracking from './pages/AttendanceTracking'
 import FacultyManagement from './pages/FacultyManagement'
+import NoticeBoard from './pages/NoticeBoard'
+import Timetable from './pages/Timetable'
 import api from './services/api'
 
 // Simple Dashboard Component
@@ -86,6 +88,7 @@ function AppContent() {
             { icon: <UserCog size={20} />, label: 'Faculty', path: '/faculty' },
             { icon: <Calendar size={20} />, label: 'Attendance', path: '/attendance' },
             { icon: <Bell size={20} />, label: 'Notifications', path: '/notifications' },
+            { icon: <Calendar size={20} />, label: 'Timetable', path: '/timetable' },
           ].map((item) => (
             <Link
               key={item.label}
@@ -124,6 +127,8 @@ function AppContent() {
             <Route path="/students" element={<StudentsList />} />
             <Route path="/attendance" element={<AttendanceTracking user={user} />} />
             <Route path="/faculty" element={<FacultyManagement />} />
+            <Route path="/notifications" element={<NoticeBoard user={user} />} />
+            <Route path="/timetable" element={<Timetable />} />
           </Routes>
         </main>
       </div>

@@ -61,3 +61,30 @@ class FacultyListView(generics.ListCreateAPIView):
     queryset = Faculty.objects.all()
     serializer_class = FacultySerializer
     permission_classes = [IsAuthenticated]
+
+class NotificationListView(generics.ListCreateAPIView):
+    queryset = Notification.objects.all().order_by('-date')
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+class TimetableListView(generics.ListAPIView):
+    queryset = Timetable.objects.all()
+    serializer_class = TimetableSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        dept = None
+        try:
+            student = Student.objects.get(user=user)
+            dept = student.department
+        except Student.DoesNotExist:
+            try:
+                faculty = Faculty.objects.get(user=user)
+                dept = faculty.department
+            except Faculty.DoesNotExist:
+                pass
+        
+        if dept:
+            return Timetable.objects.filter(department=dept)
+        return Timetable.objects.all()
