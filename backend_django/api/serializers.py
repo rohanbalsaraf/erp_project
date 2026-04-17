@@ -1,0 +1,34 @@
+from rest_framework import serializers
+from .models import Student, Attendance, Timetable, Notification
+
+class StudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = '__all__'
+        extra_kwargs = {'user': {'read_only': True}}
+
+    def create(self, validated_data):
+        # Create a User account for the student
+        student_id = validated_data.get('student_id')
+        user = User.objects.create_user(
+            username=student_id,
+            email=validated_data.get('email'),
+            password=f"{student_id}123" # Default password
+        )
+        validated_data['user'] = user
+        return super().create(validated_data)
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attendance
+        fields = '__all__'
+
+class TimetableSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Timetable
+        fields = '__all__'
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'

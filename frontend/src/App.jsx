@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Users, UserCog, Bell, Calendar, LogOut, Menu, X } from 'lucide-react'
 import Login from './pages/Login'
+import StudentsList from './pages/StudentsList'
 import api from './services/api'
 
 // Simple Dashboard Component
@@ -118,7 +119,7 @@ function AppContent() {
         <main className="flex-1 overflow-x-hidden overflow-y-auto">
           <Routes>
             <Route path="/" element={<DashboardHome user={user} />} />
-            <Route path="/students" element={<div className="p-6">Students Management Coming Soon</div>} />
+            <Route path="/students" element={<StudentsList />} />
             <Route path="/faculty" element={<div className="p-6">Faculty Management Coming Soon</div>} />
           </Routes>
         </main>
@@ -141,7 +142,5 @@ function App() {
     </Router>
   )
 }
-
-export default App
 
 export default App
