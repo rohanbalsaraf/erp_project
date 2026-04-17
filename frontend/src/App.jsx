@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } f
 import { LayoutDashboard, Users, UserCog, Bell, Calendar, LogOut, Menu, X } from 'lucide-react'
 import Login from './pages/Login'
 import StudentsList from './pages/StudentsList'
+import AttendanceTracking from './pages/AttendanceTracking'
 import api from './services/api'
 
 // Simple Dashboard Component
@@ -120,6 +121,7 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<DashboardHome user={user} />} />
             <Route path="/students" element={<StudentsList />} />
+            <Route path="/attendance" element={<AttendanceTracking user={user} />} />
             <Route path="/faculty" element={<div className="p-6">Faculty Management Coming Soon</div>} />
           </Routes>
         </main>
