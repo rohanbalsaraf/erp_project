@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Link } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -19,10 +20,12 @@ export default function TeacherDashboard() {
       </View>
 
       <View style={styles.grid}>
-        <TouchableOpacity style={styles.card}>
-          <MaterialIcons name="fact-check" size={32} color="#4F46E5" />
-          <Text style={styles.cardTitle}>Mark Attendance</Text>
-        </TouchableOpacity>
+        <Link href="/(app)/(teacher)/attendance" asChild>
+          <TouchableOpacity style={styles.card}>
+            <MaterialIcons name="fact-check" size={32} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Mark Attendance</Text>
+          </TouchableOpacity>
+        </Link>
 
         <TouchableOpacity style={styles.card}>
           <MaterialIcons name="assignment" size={32} color="#10B981" />
