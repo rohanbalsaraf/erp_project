@@ -207,7 +207,6 @@ const styles = StyleSheet.create({
     padding: 40,
     alignItems: 'center',
     width: '100%',
-    gridColumn: '1 / -1',
   },
   emptyText: {
     marginTop: 16,

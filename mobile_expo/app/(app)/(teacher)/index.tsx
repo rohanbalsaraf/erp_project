@@ -20,6 +20,13 @@ export default function TeacherDashboard() {
       </View>
 
       <View style={styles.grid}>
+        <Link href="/(app)/(teacher)/add-student" asChild>
+          <TouchableOpacity style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#10B981' }]}>
+            <MaterialIcons name="person-add" size={32} color="#10B981" />
+            <Text style={styles.cardTitle}>New Admission</Text>
+          </TouchableOpacity>
+        </Link>
+
         <Link href="/(app)/(teacher)/attendance" asChild>
           <TouchableOpacity style={styles.card}>
             <MaterialIcons name="fact-check" size={32} color="#4F46E5" />
