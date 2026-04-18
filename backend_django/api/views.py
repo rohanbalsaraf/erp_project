@@ -116,6 +116,18 @@ class StudentListView(generics.ListCreateAPIView):
     serializer_class = StudentSerializer
     permission_classes = [FacultyOrAdminCreation]
 
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not user.is_staff:
+            try:
+                faculty = Faculty.objects.get(user=user)
+                # Auto-assign teacher's department for real-time sync
+                serializer.save(department=faculty.department)
+            except Faculty.DoesNotExist:
+                serializer.save()
+        else:
+            serializer.save()
+
     def get_queryset(self):
         user = self.request.user
         if user.is_staff:
