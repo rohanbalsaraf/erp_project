@@ -51,6 +51,10 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  getBaseUrl() {
+    return API_BASE_URL;
+  }
+
   private async handleResponse(response: Response) {
     const text = await response.text();
     let data;

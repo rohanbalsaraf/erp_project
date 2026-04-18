@@ -1,125 +1,201 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
 import { MaterialIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Theme } from '../../../constants/theme';
+
+const { width } = Dimensions.get('window');
+const COLUMN_WIDTH = (width - Theme.spacing.lg * 3) / 2;
 
 export default function TeacherDashboard() {
   const { user, signOut } = useAuth();
 
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Welcome, Professor</Text>
-          <Text style={styles.nameText}>{user?.username}</Text>
-        </View>
-        <TouchableOpacity onPress={signOut} style={styles.logoutBtn}>
-          <MaterialIcons name="logout" size={20} color="#EF4444" />
-        </TouchableOpacity>
-      </View>
+  const menuItems = [
+    { title: 'Mark Attendance', icon: 'fact-check', color: Theme.colors.primary, href: '/(app)/(teacher)/attendance' },
+    { title: 'Division Sorting', icon: 'sort', color: Theme.colors.secondary, href: '/(app)/(teacher)/add-student' },
+    { title: 'Assignments', icon: 'assignment', color: Theme.colors.status.success, href: '/(app)/(teacher)/assignments' },
+    { title: 'Timetable', icon: 'event-note', color: Theme.colors.status.warning, href: '/(app)/(teacher)/timetable' },
+    { title: 'Notice Board', icon: 'notifications-active', color: Theme.colors.status.error, href: '/(app)/notices' },
+    { title: 'Document Vault', icon: 'cloud-download', color: Theme.colors.status.info, href: '/(app)/documents' },
+  ];
 
-      <View style={styles.grid}>
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View style={styles.profileSection}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{user?.username?.charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={styles.userInfo}>
+              <Text style={styles.welcomeText}>Professor Portal</Text>
+              <Text style={styles.nameText}>{user?.username}</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={signOut} style={styles.logoutBtn}>
+            <MaterialIcons name="logout" size={20} color={Theme.colors.status.error} />
+          </TouchableOpacity>
+        </View>
+
         {user?.role === 'admin' && (
-          <Link href="/(app)/(teacher)/admission" asChild>
-            <TouchableOpacity style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#10B981' }]}>
-              <MaterialIcons name="person-add" size={32} color="#10B981" />
-              <Text style={styles.cardTitle}>New Admission</Text>
-            </TouchableOpacity>
-          </Link>
+          <View style={styles.adminSection}>
+            <Text style={styles.sectionTitle}>Administrative</Text>
+            <Link href="/(app)/(teacher)/admission" asChild>
+              <TouchableOpacity style={styles.adminCard}>
+                <View style={styles.adminIconContainer}>
+                  <MaterialIcons name="person-add" size={28} color="#FFF" />
+                </View>
+                <View>
+                  <Text style={styles.adminCardTitle}>New Admission</Text>
+                  <Text style={styles.adminCardSub}>Enroll new identity into ledger</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={Theme.colors.text.muted} style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
+            </Link>
+          </View>
         )}
 
-        <Link href="/(app)/(teacher)/add-student" asChild>
-          <TouchableOpacity style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#4F46E5' }]}>
-            <MaterialIcons name="sort" size={32} color="#4F46E5" />
-            <Text style={styles.cardTitle}>Division Sorting</Text>
-          </TouchableOpacity>
-        </Link>
+        <Text style={styles.sectionTitle}>Teaching Operations</Text>
 
-        <Link href="/(app)/(teacher)/attendance" asChild>
-          <TouchableOpacity style={styles.card}>
-            <MaterialIcons name="fact-check" size={32} color="#4F46E5" />
-            <Text style={styles.cardTitle}>Mark Attendance</Text>
-          </TouchableOpacity>
-        </Link>
-
-        <TouchableOpacity style={styles.card}>
-          <MaterialIcons name="assignment" size={32} color="#10B981" />
-          <Text style={styles.cardTitle}>Grade Assignments</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.card}>
-          <MaterialIcons name="event-note" size={32} color="#F59E0B" />
-          <Text style={styles.cardTitle}>My Timetable</Text>
-        </TouchableOpacity>
-
-        <Link href="/(app)/notices" asChild>
-          <TouchableOpacity style={styles.card}>
-            <MaterialIcons name="notifications-active" size={32} color="#EF4444" />
-            <Text style={styles.cardTitle}>Notice Board</Text>
-          </TouchableOpacity>
-        </Link>
-
-        <Link href="/(app)/documents" asChild>
-          <TouchableOpacity style={styles.card}>
-            <MaterialIcons name="cloud-download" size={32} color="#3B82F6" />
-            <Text style={styles.cardTitle}>Document Vault</Text>
-          </TouchableOpacity>
-        </Link>
-      </View>
-    </ScrollView>
+        <View style={styles.grid}>
+          {menuItems.map((item, index) => (
+            <Link key={index} href={item.href as any} asChild>
+              <TouchableOpacity style={styles.card}>
+                <View style={[styles.iconContainer, { backgroundColor: item.color + '15' }]}>
+                  <MaterialIcons name={item.icon as any} size={28} color={item.color} />
+                </View>
+                <Text style={styles.cardTitle}>{item.title}</Text>
+              </TouchableOpacity>
+            </Link>
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Theme.colors.background,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
-    padding: 24,
-    paddingTop: 60,
+  },
+  scrollContent: {
+    padding: Theme.spacing.lg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: Theme.spacing.xl,
   },
-  welcomeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  nameText: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#111827',
-  },
-  logoutBtn: {
-    padding: 10,
-    backgroundColor: '#FEF2F2',
-    borderRadius: 12,
-  },
-  grid: {
-    gap: 16,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    padding: 24,
-    borderRadius: 20,
+  profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
   },
-  cardTitle: {
-    marginLeft: 16,
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: Theme.radius.lg,
+    backgroundColor: Theme.colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Theme.shadows.soft,
+  },
+  avatarText: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  userInfo: {
+    marginLeft: Theme.spacing.md,
+  },
+  welcomeText: {
+    ...Theme.typography.caption,
+    color: Theme.colors.text.secondary,
+  },
+  nameText: {
+    ...Theme.typography.h1,
+    color: Theme.colors.text.primary,
+  },
+  logoutBtn: {
+    padding: Theme.spacing.sm,
+    backgroundColor: '#FEF2F2',
+    borderRadius: Theme.radius.md,
+  },
+  adminSection: {
+    marginBottom: Theme.spacing.xl,
+  },
+  sectionTitle: {
+    ...Theme.typography.h2,
+    color: Theme.colors.text.primary,
+    marginBottom: Theme.spacing.md,
+  },
+  adminCard: {
+    backgroundColor: Theme.colors.surface,
+    padding: Theme.spacing.md,
+    borderRadius: Theme.radius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...Theme.shadows.soft,
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.status.success,
+  },
+  adminIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: Theme.radius.md,
+    backgroundColor: Theme.colors.status.success,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Theme.spacing.md,
+  },
+  adminCardTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1F2937',
+    color: Theme.colors.text.primary,
+  },
+  adminCardSub: {
+    fontSize: 12,
+    color: Theme.colors.text.secondary,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Theme.spacing.lg,
+    justifyContent: 'space-between',
+  },
+  card: {
+    width: COLUMN_WIDTH,
+    backgroundColor: Theme.colors.surface,
+    padding: Theme.spacing.lg,
+    borderRadius: Theme.radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Theme.shadows.soft,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: Theme.radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.sm,
+  },
+  cardTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Theme.colors.text.primary,
+    textAlign: 'center',
   }
 });

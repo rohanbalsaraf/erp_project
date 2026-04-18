@@ -4,6 +4,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../services/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Theme } from '../../../constants/theme';
 
 export default function AdmissionScreen() {
   const { token, user } = useAuth();
@@ -15,13 +17,12 @@ export default function AdmissionScreen() {
     name: '',
     email: '',
     phone: '',
-    enrollment_id: '', // New field
-    department: '', // Added for branch selection
+    enrollment_id: '',
+    department: '',
     division: '',
     category: ''
   });
 
-  // PRE-FILL DEPARTMENT FOR TEACHERS, LEAVE OPEN FOR ADMIN
   React.useEffect(() => {
     if (user?.role !== 'admin' && user?.profile?.department) {
       updateForm('department', user.profile.department);
@@ -42,9 +43,9 @@ export default function AdmissionScreen() {
       }
 
       await api.post('/students/', payload, token as string);
-      
+
       Alert.alert(
-        "Success", 
+        "Success",
         "Student record anchored in the ledger. Credentials sent to student email.",
         [{ text: "Confirm", onPress: () => router.back() }]
       );
@@ -61,201 +62,234 @@ export default function AdmissionScreen() {
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
+  const departments = ['Computer Science', 'Information Technology', 'Mechanical Engineering', 'Electrical Engineering', 'Civil Engineering'];
+
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back-ios" size={20} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Admission</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.infoBox}>
-          <MaterialIcons name="security" size={20} color="#4F46E5" />
-          <Text style={styles.infoText}>
-            Administrative Enrollment: Ensure all academic identifiers are verified before finalization.
-          </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <MaterialIcons name="arrow-back-ios" size={18} color={Theme.colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Student Enrollment</Text>
+          <View style={{ width: 44 }} />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Official Student ID</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="STU-2024-XXXX"
-            value={form.student_id}
-            onChangeText={(v) => updateForm('student_id', v)}
-            autoCapitalize="characters"
-          />
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>Identity & Access</Text>
+            <View style={styles.card}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Official Student ID</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="STU-2024-XXXX"
+                  value={form.student_id}
+                  onChangeText={(v) => updateForm('student_id', v)}
+                  autoCapitalize="characters"
+                />
+              </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Enrollment ID (10th/12th/Diploma)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. EB20241928"
-            value={form.enrollment_id}
-            onChangeText={(v) => updateForm('enrollment_id', v)}
-            autoCapitalize="characters"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Identity Document Name"
-            value={form.name}
-            onChangeText={(v) => updateForm('name', v)}
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email Address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="official@student.edu"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={form.email}
-            onChangeText={(v) => updateForm('email', v)}
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Contact Node</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="+91 Mobile Number"
-            keyboardType="phone-pad"
-            value={form.phone}
-            onChangeText={(v) => updateForm('phone', v)}
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Academic Department</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.departmentScroll}>
-            {['Computer Science', 'Information Technology', 'Mechanical Engineering', 'Electrical Engineering', 'Civil Engineering'].map((dept) => (
-              <TouchableOpacity 
-                key={dept}
-                onPress={() => updateForm('department', dept)}
-                style={[
-                  styles.deptBadge,
-                  form.department === dept && styles.deptBadgeActive
-                ]}
-              >
-                <Text style={[
-                  styles.deptText,
-                  form.department === dept && styles.deptTextActive
-                ]}>{dept.split(' ')[0]}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.submitBtn, loading && styles.disabledBtn]} 
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <View style={styles.btnContent}>
-              <MaterialIcons name="verified-user" size={20} color="#FFF" />
-              <Text style={styles.submitBtnText}>PROMPT ENROLLMENT</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Enrollment ID</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. EB20241928"
+                  value={form.enrollment_id}
+                  onChangeText={(v) => updateForm('enrollment_id', v)}
+                  autoCapitalize="characters"
+                />
+              </View>
             </View>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>Personal Profile</Text>
+            <View style={styles.card}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="As per Identity Document"
+                  value={form.name}
+                  onChangeText={(v) => updateForm('name', v)}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email Address</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="official@student.edu"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={form.email}
+                  onChangeText={(v) => updateForm('email', v)}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Mobile Node</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="+91 XXXXX XXXXX"
+                  keyboardType="phone-pad"
+                  value={form.phone}
+                  onChangeText={(v) => updateForm('phone', v)}
+                />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>Academic Branch</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.departmentScroll}>
+              {departments.map((dept) => (
+                <TouchableOpacity
+                  key={dept}
+                  onPress={() => updateForm('department', dept)}
+                  style={[
+                    styles.deptBadge,
+                    form.department === dept && styles.deptBadgeActive
+                  ]}
+                >
+                  <Text style={[
+                    styles.deptText,
+                    form.department === dept && styles.deptTextActive
+                  ]}>{dept}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.submitBtn, loading && styles.disabledBtn]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <View style={styles.btnContent}>
+                <MaterialIcons name="verified-user" size={20} color="#FFF" />
+                <Text style={styles.submitBtnText}>FINALIZE ADMISSION</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.footerNote}>
+            <MaterialIcons name="info-outline" size={14} color={Theme.colors.text.muted} />
+            <Text style={styles.footerText}>
+              Admission data is immutable once anchored in the central database.
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Theme.colors.surface,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: Theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6'
+    paddingHorizontal: Theme.spacing.lg,
+    paddingVertical: Theme.spacing.md,
+    backgroundColor: Theme.colors.surface,
+    ...Theme.shadows.soft,
   },
   backBtn: {
-    padding: 10,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    padding: Theme.spacing.sm,
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.radius.md,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#111827',
+    ...Theme.typography.h2,
+    color: Theme.colors.text.primary,
   },
   scrollContent: {
-    padding: 24,
-    paddingBottom: 60,
+    padding: Theme.spacing.lg,
+    paddingBottom: Theme.spacing.xxl,
   },
-  infoBox: {
-    flexDirection: 'row',
-    backgroundColor: '#EEF2FF',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 24,
-    alignItems: 'flex-start',
+  section: {
+    marginBottom: Theme.spacing.xl,
   },
-  infoText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#4338CA',
-    marginLeft: 12,
-    lineHeight: 18,
+  sectionHeader: {
+    ...Theme.typography.caption,
+    color: Theme.colors.text.secondary,
+    marginBottom: Theme.spacing.sm,
+    marginLeft: Theme.spacing.xs,
+  },
+  card: {
+    backgroundColor: Theme.colors.surface,
+    borderRadius: Theme.radius.lg,
+    padding: Theme.spacing.md,
+    ...Theme.shadows.soft,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: Theme.spacing.md,
   },
   label: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginLeft: 4,
+    fontSize: 11,
+    fontWeight: '700',
+    color: Theme.colors.text.secondary,
+    marginBottom: 6,
+    marginLeft: 2,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 16,
-    padding: 16,
-    fontSize: 14,
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.radius.md,
+    padding: Theme.spacing.md,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: Theme.colors.text.primary,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+  departmentScroll: {
+    flexDirection: 'row',
+  },
+  deptBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: Theme.radius.md,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    marginRight: Theme.spacing.sm,
+    ...Theme.shadows.soft,
+  },
+  deptBadgeActive: {
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
+  },
+  deptText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Theme.colors.text.secondary,
+  },
+  deptTextActive: {
+    color: '#FFFFFF',
   },
   submitBtn: {
-    backgroundColor: '#4F46E5',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: Theme.colors.primary,
+    borderRadius: Theme.radius.lg,
+    padding: Theme.spacing.lg,
     alignItems: 'center',
-    marginTop: 12,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    elevation: 8,
+    marginTop: Theme.spacing.md,
+    ...Theme.shadows.medium,
   },
   disabledBtn: {
     opacity: 0.6,
@@ -268,32 +302,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '900',
-    letterSpacing: 1.5,
-    marginLeft: 10,
+    letterSpacing: 1,
+    marginLeft: Theme.spacing.sm,
   },
-  departmentScroll: {
+  footerNote: {
     flexDirection: 'row',
-    marginTop: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Theme.spacing.xl,
+    paddingHorizontal: Theme.spacing.xl,
   },
-  deptBadge: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginRight: 10,
-  },
-  deptBadgeActive: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5',
-  },
-  deptText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6B7280',
-  },
-  deptTextActive: {
-    color: '#FFFFFF',
+  footerText: {
+    fontSize: 11,
+    color: Theme.colors.text.muted,
+    marginLeft: 6,
+    textAlign: 'center',
   }
 });

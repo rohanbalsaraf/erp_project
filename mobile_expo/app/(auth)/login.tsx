@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Dimensions } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Theme } from '../../constants/theme';
 import api from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
-export default function LoginScreen() {
+export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryResult, setRecoveryResult] = useState<{ username: string, new_password: string } | null>(null);
   const [error, setError] = useState('');
 
   const { signIn } = useAuth();
@@ -17,13 +24,12 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!username || !password) {
-      setError('Please fill in all fields');
+      setError('Operator ID and Security Key are required for access.');
       return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
     setError('');
-
     try {
       // Fetch JWT via Django Token Endpoint
       const response = await api.post('/token/', { username, password });
@@ -43,261 +49,345 @@ export default function LoginScreen() {
         router.replace('/(app)/(student)');
       }
     } catch (err: any) {
-      setError('Invalid Credentials. Please check your username and password.');
+      console.error(err);
+
+      let errorMsg = 'Invalid credentials or system rejection.';
+
+      if (err.message && (err.message.includes('Network request failed') || err.message.includes('Network Error'))) {
+        const baseUrl = api.getBaseUrl();
+        errorMsg = `Network unreachable. Target: ${baseUrl}`;
+      } else if (err.data && err.data.detail) {
+        errorMsg = err.data.detail;
+      }
+      setError(errorMsg);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const [isRecovering, setIsRecovering] = useState(false);
-  const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [recoveryResult, setRecoveryResult] = useState<{username: string, new_password: string} | null>(null);
-
   const handleRecover = async () => {
-    if (!recoveryEmail) return;
-    setLoading(true);
+    if (!recoveryEmail) {
+      setError("Provide registered email.");
+      return;
+    }
+    setRecoveryLoading(true);
     setError('');
     try {
       const response = await api.post('/recover-credentials/', { email: recoveryEmail });
       setRecoveryResult(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Recovery failed.');
+      setError("Recovery failed. Identity not found.");
     } finally {
-      setLoading(false);
+      setRecoveryLoading(false);
     }
   };
 
-  if (isRecovering) {
-    return (
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.appTitle}>RECOVERY</Text>
-          <Text style={styles.subtitle}>Account Access Restoration</Text>
-          
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          {recoveryResult ? (
-            <View style={styles.resultBox}>
-              <Text style={styles.resultLabel}>User ID: <Text style={styles.resultValue}>{recoveryResult.username}</Text></Text>
-              <Text style={styles.resultLabel}>Temp Key: <Text style={styles.resultValue}>{recoveryResult.new_password}</Text></Text>
-              <Text style={styles.warningText}>Please login and update your password immediately.</Text>
-              <TouchableOpacity style={styles.loginButton} onPress={() => { setIsRecovering(false); setRecoveryResult(null); }}>
-                <Text style={styles.loginButtonText}>RETURN TO LOGIN</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Registered Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter email"
-                placeholderTextColor="#A0AEC0"
-                value={recoveryEmail}
-                onChangeText={setRecoveryEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TouchableOpacity style={styles.loginButton} onPress={handleRecover} disabled={loading}>
-                {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.loginButtonText}>RECOVER ACCESS</Text>}
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryButton} onPress={() => setIsRecovering(false)}>
-                <Text style={styles.secondaryButtonText}>CANCEL</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </KeyboardAvoidingView>
-    );
-  }
-
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.card}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.appTitle}>COLLEGE ERP</Text>
-          <Text style={styles.subtitle}>Mobile Cloud Terminal</Text>
-        </View>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.brandSection}>
+            <View style={styles.logoContainer}>
+              <MaterialIcons name="security" size={48} color={Theme.colors.primary} />
+            </View>
+            <Text style={styles.brandTitle}>SECURE PORTAL</Text>
+            <Text style={styles.brandSubtitle}>Centralized Academic Ledger v1.1</Text>
+          </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <View style={styles.authCard}>
+            {showRecovery ? (
+              <View style={styles.recoveryContainer}>
+                <Text style={styles.sectionTitle}>Identity Recovery</Text>
+                <Text style={styles.sectionSubtitle}>Account retrieval via registered email.</Text>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>System ID</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. EMP-2042"
-            placeholderTextColor="#A0AEC0"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
-        </View>
+                {recoveryResult ? (
+                  <View style={styles.resultBox}>
+                    <Text style={styles.resultLabel}>User ID: <Text style={styles.resultValue}>{recoveryResult.username}</Text></Text>
+                    <Text style={styles.resultLabel}>Temp Key: <Text style={styles.resultValue}>{recoveryResult.new_password}</Text></Text>
+                    <Text style={styles.warningText}>Please login and update your password immediately.</Text>
+                    <TouchableOpacity
+                      style={styles.primaryBtn}
+                      onPress={() => { setShowRecovery(false); setRecoveryResult(null); setRecoveryEmail(''); }}
+                    >
+                      <Text style={styles.primaryBtnText}>RETURN TO LOGIN</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.inputWrapper}>
+                      <Text style={styles.inputLabel}>RECOVERY EMAIL</Text>
+                      <View style={styles.inputField}>
+                        <MaterialIcons name="mail-outline" size={20} color={Theme.colors.text.muted} />
+                        <TextInput
+                          style={styles.textInput}
+                          placeholder="email@institution.edu"
+                          value={recoveryEmail}
+                          onChangeText={setRecoveryEmail}
+                          autoCapitalize="none"
+                          keyboardType="email-address"
+                        />
+                      </View>
+                    </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Access Key</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor="#A0AEC0"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-        </View>
+                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.loginButtonText}>AUTHENTICATE</Text>
-          )}
-        </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.primaryBtn, recoveryLoading && styles.disabledBtn]}
+                      onPress={handleRecover}
+                      disabled={recoveryLoading}
+                    >
+                      {recoveryLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>INITIATE RECOVERY</Text>}
+                    </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => { setIsRecovering(true); setError(''); }}>
-          <Text style={[styles.footerText, { color: '#4F46E5', marginTop: 15 }]}>Forgot credentials?</Text>
-        </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setShowRecovery(false); setError(''); }} style={styles.textBtn}>
+                      <Text style={styles.textBtnLink}>Back to Authentication</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            ) : (
+              <View style={styles.loginContainer}>
+                <Text style={styles.sectionTitle}>Authorized Access</Text>
+                <Text style={styles.sectionSubtitle}>Enter credentials to initialize session.</Text>
 
-        <Text style={styles.footerText}>Secure System Connected to Supabase Cloud</Text>
-      </View>
-    </KeyboardAvoidingView>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>OPERATOR ID</Text>
+                  <View style={styles.inputField}>
+                    <MaterialIcons name="person-outline" size={20} color={Theme.colors.text.muted} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Username / ID"
+                      value={username}
+                      onChangeText={setUsername}
+                      autoCapitalize="none"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>SECURITY KEY</Text>
+                  <View style={styles.inputField}>
+                    <MaterialIcons name="lock-outline" size={20} color={Theme.colors.text.muted} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="••••••••"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry
+                    />
+                  </View>
+                </View>
+
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                <TouchableOpacity
+                  style={[styles.primaryBtn, isLoading && styles.disabledBtn]}
+                  onPress={handleLogin}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>AUTHENTICATE</Text>}
+                </TouchableOpacity>
+
+                <View style={styles.loginFooter}>
+                  <TouchableOpacity onPress={() => { setShowRecovery(true); setError(''); }}>
+                    <Text style={styles.textBtnLink}>Forgotten ID or Secret Key?</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.systemStatus}>
+            <View style={styles.statusBadge}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>SYSTEM OPERATIONAL</Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Theme.colors.background,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+  },
+  scrollContent: {
+    padding: Theme.spacing.lg,
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  brandSection: {
+    alignItems: 'center',
+    marginBottom: Theme.spacing.xxl,
+  },
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: Theme.radius.xl,
+    backgroundColor: Theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: Theme.spacing.md,
+    ...Theme.shadows.medium,
   },
-  card: {
-    width: width * 0.85,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 32,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
+  brandTitle: {
+    ...Theme.typography.display,
+    color: Theme.colors.text.primary,
+    fontSize: 24,
   },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
+  brandSubtitle: {
+    ...Theme.typography.caption,
+    color: Theme.colors.text.muted,
+    marginTop: 4,
   },
-  appTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#111827',
-    letterSpacing: 2,
+  authCard: {
+    backgroundColor: Theme.colors.surface,
+    borderRadius: Theme.radius.xl,
+    padding: Theme.spacing.xl,
+    ...Theme.shadows.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+  },
+  sectionTitle: {
+    ...Theme.typography.h1,
+    color: Theme.colors.text.primary,
     marginBottom: 4,
+    textAlign: 'center',
   },
-  subtitle: {
-    fontSize: 12,
+  sectionSubtitle: {
+    fontSize: 13,
+    color: Theme.colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: Theme.spacing.xl,
+  },
+  inputWrapper: {
+    marginBottom: Theme.spacing.lg,
+  },
+  inputLabel: {
+    ...Theme.typography.caption,
+    fontSize: 10,
+    color: Theme.colors.text.secondary,
+    marginBottom: Theme.spacing.xs,
+    marginLeft: 4,
+  },
+  inputField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.radius.md,
+    paddingHorizontal: Theme.spacing.md,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+  textInput: {
+    flex: 1,
+    paddingVertical: Theme.spacing.md,
+    marginLeft: Theme.spacing.sm,
+    fontSize: 16,
+    fontWeight: '600',
+    color: Theme.colors.text.primary,
+  },
+  primaryBtn: {
+    backgroundColor: Theme.colors.primary,
+    borderRadius: Theme.radius.lg,
+    padding: Theme.spacing.lg,
+    alignItems: 'center',
+    marginTop: Theme.spacing.md,
+    ...Theme.shadows.medium,
+  },
+  primaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  disabledBtn: {
+    opacity: 0.6,
+  },
+  textBtn: {
+    marginTop: Theme.spacing.lg,
+    alignItems: 'center',
+  },
+  textBtnLink: {
+    color: Theme.colors.primary,
     fontWeight: '700',
-    color: '#4F46E5',
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    fontSize: 13,
+  },
+  loginFooter: {
+    marginTop: Theme.spacing.xl,
+    alignItems: 'center',
   },
   errorText: {
-    color: '#EF4444',
+    color: Theme.colors.status.error,
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: Theme.spacing.md,
     backgroundColor: '#FEF2F2',
     padding: 10,
     borderRadius: 8,
-    overflow: 'hidden',
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  input: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 16,
-    padding: 16,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  loginButton: {
-    backgroundColor: '#4F46E5',
-    borderRadius: 16,
-    padding: 18,
-    alignItems: 'center',
-    marginTop: 10,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  footerText: {
-    marginTop: 24,
-    textAlign: 'center',
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#9CA3AF',
   },
   resultBox: {
-    backgroundColor: '#EEF2FF',
-    padding: 16,
-    borderRadius: 16,
+    backgroundColor: Theme.colors.primaryLight,
+    padding: Theme.spacing.lg,
+    borderRadius: Theme.radius.lg,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
-    marginBottom: 20,
+    borderColor: Theme.colors.border,
+    marginBottom: Theme.spacing.lg,
   },
   resultLabel: {
     fontSize: 14,
-    color: '#3730A3',
+    color: Theme.colors.primaryDark,
     fontWeight: '700',
     marginBottom: 4,
   },
   resultValue: {
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    color: '#111827',
+    color: Theme.colors.text.primary,
     fontWeight: '900',
   },
   warningText: {
     fontSize: 11,
-    color: '#4F46E5',
+    color: Theme.colors.primary,
     fontWeight: '700',
     marginTop: 8,
     fontStyle: 'italic',
   },
-  secondaryButton: {
-    marginTop: 12,
-    padding: 18,
+  systemStatus: {
+    marginTop: 'auto',
+    paddingVertical: Theme.spacing.xl,
     alignItems: 'center',
   },
-  secondaryButtonText: {
-    color: '#6B7280',
-    fontSize: 12,
-    fontWeight: '700',
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Theme.radius.full,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Theme.colors.status.success,
+    marginRight: 8,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: Theme.colors.status.success,
     letterSpacing: 1,
-  }
+  },
+  loginContainer: {},
+  recoveryContainer: {},
 });

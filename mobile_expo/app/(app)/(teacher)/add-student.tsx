@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, FlatList, Dimensions } from 'react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../services/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Theme } from '../../../constants/theme';
+
+const { width } = Dimensions.get('window');
 
 export default function DivisionSortingScreen() {
   const { token, user } = useAuth();
@@ -51,24 +55,24 @@ export default function DivisionSortingScreen() {
           <Text style={styles.studentName}>{item.name}</Text>
           <Text style={styles.studentId}>{item.student_id}</Text>
         </View>
-        <View style={[styles.divBadge, { backgroundColor: item.division ? '#EEF2FF' : '#FEF2F2' }]}>
-          <Text style={[styles.divBadgeText, { color: item.division ? '#4F46E5' : '#EF4444' }]}>
-            {item.division || 'NULL'}
+        <View style={[styles.divBadge, { backgroundColor: item.division ? Theme.colors.primaryLight : '#FEF2F2' }]}>
+          <Text style={[styles.divBadgeText, { color: item.division ? Theme.colors.primary : '#EF4444' }]}>
+            {item.division || 'UNSET'}
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.divider} />
-      
+
       <View style={styles.sortActions}>
         <Text style={styles.sortLabel}>Assign Sector:</Text>
         <View style={styles.btnRow}>
           {['A', 'B', 'C', 'D'].map((div) => (
-            <TouchableOpacity 
+            <TouchableOpacity
               key={div}
               onPress={() => handleSort(item.id, div)}
               style={[
-                styles.divBtn, 
+                styles.divBtn,
                 item.division === div && styles.divBtnActive,
                 updatingId === item.id && { opacity: 0.5 }
               ]}
@@ -83,131 +87,136 @@ export default function DivisionSortingScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back-ios" size={20} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Division Sorting</Text>
-        <TouchableOpacity onPress={fetchStudents} style={styles.refreshBtn}>
-          <MaterialIcons name="sync" size={20} color="#4F46E5" />
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.loadingText}>Syncing Department Scope...</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <MaterialIcons name="arrow-back-ios" size={18} color={Theme.colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Division Sorting</Text>
+          <TouchableOpacity onPress={fetchStudents} style={styles.refreshBtn}>
+            <MaterialIcons name="sync" size={20} color={Theme.colors.primary} />
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={students}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderStudent}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <MaterialIcons name="group-off" size={64} color="#D1D5DB" />
-              <Text style={styles.emptyText}>No students pending in your department.</Text>
-            </View>
-          }
-        />
-      )}
-    </View>
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Theme.colors.primary} />
+            <Text style={styles.loadingText}>Syncing Department Scope...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={students}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderStudent}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <View style={styles.emptyIconCircle}>
+                  <MaterialIcons name="group-off" size={40} color={Theme.colors.text.muted} />
+                </View>
+                <Text style={styles.emptyTitle}>No Students</Text>
+                <Text style={styles.emptyText}>No students pending in your department scope.</Text>
+              </View>
+            }
+          />
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Theme.colors.surface,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6'
+    paddingHorizontal: Theme.spacing.lg,
+    paddingVertical: Theme.spacing.md,
+    backgroundColor: Theme.colors.surface,
+    ...Theme.shadows.soft,
   },
   backBtn: {
-    padding: 10,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    padding: Theme.spacing.sm,
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.radius.md,
   },
   refreshBtn: {
-    padding: 10,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 12,
+    padding: Theme.spacing.sm,
+    backgroundColor: Theme.colors.primaryLight,
+    borderRadius: Theme.radius.md,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#111827',
+    ...Theme.typography.h2,
+    color: Theme.colors.text.primary,
   },
   listContent: {
-    padding: 20,
+    padding: Theme.spacing.lg,
     paddingBottom: 100,
   },
   studentCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    backgroundColor: Theme.colors.surface,
+    borderRadius: Theme.radius.lg,
+    padding: Theme.spacing.md,
+    marginBottom: Theme.spacing.md,
+    ...Theme.shadows.soft,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
   },
   cardInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: '#4F46E5',
+    width: 44,
+    height: 44,
+    borderRadius: Theme.radius.md,
+    backgroundColor: Theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     color: '#FFFFFF',
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: '800',
   },
   details: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: Theme.spacing.md,
   },
   studentName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#111827',
+    color: Theme.colors.text.primary,
   },
   studentId: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#6B7280',
+    color: Theme.colors.text.muted,
     marginTop: 2,
   },
   divBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Theme.radius.sm,
   },
   divBadgeText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '900',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 16,
+    backgroundColor: Theme.colors.border,
+    marginVertical: Theme.spacing.md,
   },
   sortActions: {
     flexDirection: 'row',
@@ -217,7 +226,7 @@ const styles = StyleSheet.create({
   sortLabel: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#9CA3AF',
+    color: Theme.colors.text.muted,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -226,23 +235,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   divBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+    width: 32,
+    height: 32,
+    borderRadius: Theme.radius.sm,
+    backgroundColor: Theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: Theme.colors.border,
   },
   divBtnActive: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4338CA',
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
   },
   divBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#4B5563',
+    color: Theme.colors.text.secondary,
   },
   divBtnTextActive: {
     color: '#FFFFFF',
@@ -251,25 +260,37 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Theme.colors.background,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 12,
-    fontWeight: '900',
-    color: '#4F46E5',
-    textTransform: 'uppercase',
-    letterSpacing: 2,
+    ...Theme.typography.caption,
+    marginTop: Theme.spacing.md,
+    color: Theme.colors.primary,
   },
   emptyContainer: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 100,
+    paddingHorizontal: 40,
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Theme.colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.lg,
+  },
+  emptyTitle: {
+    ...Theme.typography.h2,
+    color: Theme.colors.text.primary,
+    marginBottom: 8,
   },
   emptyText: {
-    marginTop: 16,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    ...Theme.typography.body,
+    color: Theme.colors.text.secondary,
     textAlign: 'center',
   }
 });

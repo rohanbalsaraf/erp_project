@@ -4,6 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Theme } from '../../constants/theme';
 
 type Notice = {
   id: number;
@@ -36,128 +38,154 @@ export default function NoticeBoardScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+        <ActivityIndicator size="large" color={Theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back-ios" size={20} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Official Notices</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <MaterialIcons name="arrow-back-ios" size={18} color={Theme.colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Notice Board</Text>
+          <View style={{ width: 44 }} />
+        </View>
 
-      <FlatList
-        data={notices}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <MaterialIcons name="campaign" size={20} color="#4F46E5" />
-              <Text style={styles.date}>{new Date(item.date_posted).toDateString()}</Text>
+        <FlatList
+          data={notices}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={[styles.iconBox, { backgroundColor: Theme.colors.primary + '10' }]}>
+                  <MaterialIcons name="campaign" size={24} color={Theme.colors.primary} />
+                </View>
+                <Text style={styles.date}>
+                  {new Date(item.date_posted).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                </Text>
+              </View>
+              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.content}>{item.content}</Text>
             </View>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.content}>{item.content}</Text>
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <MaterialIcons name="notifications-off" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyText}>No active official notifications.</Text>
-          </View>
-        }
-      />
-    </View>
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <MaterialIcons name="notifications-none" size={40} color={Theme.colors.text.muted} />
+              </View>
+              <Text style={styles.emptyTitle}>Clear Skies</Text>
+              <Text style={styles.emptyText}>No active official notifications currently archived in the ledger.</Text>
+            </View>
+          }
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Theme.colors.surface,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: Theme.colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6'
+    backgroundColor: Theme.colors.background
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingHorizontal: Theme.spacing.lg,
+    paddingVertical: Theme.spacing.md,
+    backgroundColor: Theme.colors.surface,
+    ...Theme.shadows.soft,
   },
   backBtn: {
-    padding: 10,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    padding: Theme.spacing.sm,
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.radius.md,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#111827',
+    ...Theme.typography.h2,
+    color: Theme.colors.text.primary,
   },
   listContent: {
-    padding: 24,
-    paddingBottom: 40,
+    padding: Theme.spacing.lg,
+    paddingBottom: Theme.spacing.xxl,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4F46E5',
+    backgroundColor: Theme.colors.surface,
+    padding: Theme.spacing.lg,
+    borderRadius: Theme.radius.lg,
+    marginBottom: Theme.spacing.md,
+    ...Theme.shadows.soft,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Theme.spacing.md,
   },
-  date: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#9CA3AF',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  content: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#4B5563',
-    fontWeight: '500',
-  },
-  emptyContainer: {
-    padding: 40,
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: Theme.radius.md,
+    justifyContent: 'center',
     alignItems: 'center',
   },
+  date: {
+    ...Theme.typography.caption,
+    color: Theme.colors.text.muted,
+  },
+  title: {
+    ...Theme.typography.h2,
+    fontSize: 18,
+    color: Theme.colors.text.primary,
+    marginBottom: Theme.spacing.xs,
+  },
+  content: {
+    ...Theme.typography.body,
+    color: Theme.colors.text.secondary,
+    lineHeight: 22,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 100,
+    paddingHorizontal: 40,
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Theme.colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.lg,
+  },
+  emptyTitle: {
+    ...Theme.typography.h2,
+    color: Theme.colors.text.primary,
+    marginBottom: 8,
+  },
   emptyText: {
-    marginTop: 16,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    ...Theme.typography.body,
+    color: Theme.colors.text.secondary,
+    textAlign: 'center',
   }
 });
