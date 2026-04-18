@@ -64,7 +64,7 @@ const DashboardHome = ({ user }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-10">
         <div>
           <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase tracking-tighter">System Console</h1>
-          <p className="text-gray-500 mt-2 font-black uppercase text-[10px] tracking-widest">Active Identity: <span className="text-indigo-600">{user?.username}</span> // Role: <span className="text-indigo-600">{user?.role}</span></p>
+          <p className="text-gray-500 mt-2 font-black uppercase text-[10px] tracking-widest">Active Identity: <span className="text-indigo-600">{user?.username}</span> // Role: <span className="text-indigo-600">{user?.sub_role || user?.role}</span></p>
         </div>
         <div className="mt-4 md:mt-0 flex items-center space-x-3 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
           <span className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest">Production v1.0.4</span>
@@ -143,18 +143,18 @@ function AppContent() {
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/', roles: ['admin', 'teacher', 'student'] },
     
     // ADMIN ONLY: Management & Staff
-    { icon: <UserCog size={20} />, label: 'Faculty Management', path: '/faculty', roles: ['admin'] },
-    { icon: <Users size={20} />, label: 'Student Accounts', path: '/students', roles: ['admin'] },
-    { icon: <CreditCard size={20} />, label: 'Payroll & Salaries', path: '/salaries', roles: ['admin'] },
-    { icon: <FileText size={20} />, label: 'Document Vault', path: '/documents', roles: ['admin'] },
-    { icon: <MessageSquare size={20} />, label: 'Global Leaves', path: '/leaves', roles: ['admin'] },
+    { icon: <UserCog size={20} />, label: 'Faculty Management', path: '/faculty', roles: ['admin'], subRoles: ['Super Admin', 'HR'] },
+    { icon: <Users size={20} />, label: 'Student Accounts', path: '/students', roles: ['admin'], subRoles: ['Super Admin', 'Registrar'] },
+    { icon: <CreditCard size={20} />, label: 'Payroll & Salaries', path: '/salaries', roles: ['admin'], subRoles: ['Super Admin', 'Finance'] },
+    { icon: <FileText size={20} />, label: 'Document Vault', path: '/documents', roles: ['admin'], subRoles: ['Super Admin', 'Registrar', 'HR'] },
+    { icon: <MessageSquare size={20} />, label: 'Global Leaves', path: '/leaves', roles: ['admin'], subRoles: ['Super Admin', 'HR'] },
     
     // TEACHER ONLY: Academic Core
     { icon: <Users size={20} />, label: 'My Students', path: '/students', roles: ['teacher'] },
     { icon: <Award size={20} />, label: 'Gradebook', path: '/results', roles: ['teacher'] },
     { icon: <ClipboardList size={20} />, label: 'Course Assignments', path: '/assignments', roles: ['teacher'] },
     { icon: <Briefcase size={20} />, label: 'Project Tracking', path: '/projects', roles: ['teacher'] },
-    { icon: <Calendar size={20} />, label: 'Time Table Management', path: '/timetable', roles: ['teacher'] },
+    { icon: <Calendar size={20} />, label: 'Time Table Management', path: '/timetable', roles: ['teacher'], subRoles: ['HOD', 'Senior Professor'] },
     { icon: <MessageSquare size={20} />, label: 'Leave Requests', path: '/leaves', roles: ['teacher'] },
     
     // STUDENT ONLY: Student Portal
@@ -167,7 +167,13 @@ function AppContent() {
     
     // COMMON
     { icon: <Bell size={20} />, label: 'Bulletin Board', path: '/notifications', roles: ['admin', 'teacher', 'student'] },
-  ].filter(item => item.roles.includes(user?.role));
+  ].filter(item => {
+    if (!item.roles.includes(user?.role)) return false;
+    if (item.subRoles && user?.sub_role) {
+      return item.subRoles.includes(user.sub_role);
+    }
+    return true; // No specific subRole required
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

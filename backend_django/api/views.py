@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.db.models import Count, Q, Sum
 from .models import (
-    Student, Faculty, Attendance, Notification, Timetable, Result,
+    Student, Faculty, AdminProfile, Attendance, Notification, Timetable, Result,
     Assignment, AssignmentSubmission, Project, Leave, Fee, Salary, Document
 )
 from .serializers import (
@@ -24,12 +24,14 @@ class UserProfileView(APIView):
             "id": user.id,
             "username": user.username,
             "email": user.email,
-            "role": "admin" if user.is_staff else "user"
+            "role": "admin" if user.is_staff else "user",
+            "sub_role": "Base User"
         }
         
         try:
             student = Student.objects.get(user=user)
             data["role"] = "student"
+            data["sub_role"] = student.role
             data["profile"] = {
                 "id": student.id,
                 "student_id": student.student_id,
@@ -39,13 +41,20 @@ class UserProfileView(APIView):
             try:
                 faculty = Faculty.objects.get(user=user)
                 data["role"] = "teacher"
+                data["sub_role"] = faculty.role
                 data["profile"] = {
                     "id": faculty.id,
                     "employee_id": faculty.employee_id,
                     "department": faculty.department
                 }
             except Faculty.DoesNotExist:
-                pass
+                if user.is_staff:
+                    try:
+                        admin_prof = AdminProfile.objects.get(user=user)
+                        data["sub_role"] = admin_prof.role
+                        data["department"] = admin_prof.department
+                    except AdminProfile.DoesNotExist:
+                        data["sub_role"] = "Super Admin"
                 
         return Response(data)
 

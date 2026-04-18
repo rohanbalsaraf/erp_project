@@ -9,6 +9,8 @@ const Register = () => {
     email: '',
     password: '',
     admin_key: '',
+    role: 'Super Admin',
+    department: 'Administration',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -98,6 +100,35 @@ const Register = () => {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Admin Role</label>
+                <select
+                  className="w-full pl-6 pr-6 py-4 bg-slate-50 border border-transparent rounded-[1.25rem] focus:ring-4 focus:ring-indigo-500/10 focus:bg-white outline-none transition-all text-sm font-bold appearance-none"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                >
+                  <option value="Super Admin">Super Admin</option>
+                  <option value="Registrar">Registrar</option>
+                  <option value="HR">Human Resources</option>
+                  <option value="Finance">Finance</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Department</label>
+                <select
+                  className="w-full pl-6 pr-6 py-4 bg-slate-50 border border-transparent rounded-[1.25rem] focus:ring-4 focus:ring-indigo-500/10 focus:bg-white outline-none transition-all text-sm font-bold appearance-none"
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                >
+                  <option value="Administration">Administration</option>
+                  <option value="Admissions">Admissions</option>
+                  <option value="Accounts">Accounts</option>
+                  <option value="IT Services">IT Services</option>
+                </select>
               </div>
             </div>
 

@@ -2,7 +2,10 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Student(models.Model):
+    STUDENT_ROLES = (('Student', 'Student'), ('Class Representative', 'Class Representative'))
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
+    role = models.CharField(max_length=50, choices=STUDENT_ROLES, default='Student')
     student_id = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=200)
     email = models.EmailField(unique=True)
@@ -18,14 +21,27 @@ class Student(models.Model):
         return f"{self.name} ({self.student_id})"
 
 class Faculty(models.Model):
+    FACULTY_ROLES = (('HOD', 'Head of Department'), ('Senior Professor', 'Senior Professor'), ('Assistant Professor', 'Assistant Professor'), ('Guest Lecturer', 'Guest Lecturer'))
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='faculty_profile')
+    role = models.CharField(max_length=50, choices=FACULTY_ROLES, default='Assistant Professor')
     employee_id = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=200)
     department = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.role}"
+
+class AdminProfile(models.Model):
+    ADMIN_ROLES = (('Super Admin', 'Super Admin'), ('Registrar', 'Registrar'), ('HR', 'HR'), ('Finance', 'Finance'))
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
+    role = models.CharField(max_length=50, choices=ADMIN_ROLES, default='Super Admin')
+    department = models.CharField(max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.role}"
 
 class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='attendance')

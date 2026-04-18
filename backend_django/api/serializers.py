@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from .models import (
-    Student, Faculty, Attendance, Timetable, Notification, 
+    Student, Faculty, AdminProfile, Attendance, Timetable, Notification, 
     Result, Assignment, AssignmentSubmission, Project, Leave, Fee, Salary, Document
 )
 
@@ -166,10 +166,12 @@ from django.conf import settings
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     admin_key = serializers.CharField(write_only=True)
+    role = serializers.CharField(write_only=True, required=False)
+    department = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'admin_key']
+        fields = ['username', 'email', 'password', 'admin_key', 'role', 'department']
 
     def validate_admin_key(self, value):
         if value != settings.ADMIN_REGISTRATION_KEY:
@@ -177,11 +179,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        validated_data.pop('admin_key')
+        admin_key = validated_data.pop('admin_key')
+        role = validated_data.pop('role', 'Super Admin')
+        department = validated_data.pop('department', 'Administration')
+        
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
             is_staff=True # Verified Admins get staff status
         )
+        AdminProfile.objects.create(user=user, role=role, department=department)
         return user

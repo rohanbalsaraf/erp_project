@@ -1,9 +1,23 @@
 from rest_framework import permissions
-from .models import Student, Faculty
+from .models import Student, Faculty, AdminProfile
 
 class IsAdminUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_staff)
+
+class FinanceAdminOnly(permissions.BasePermission):
+    """
+    Only Super Admins and Finance/Accountant Admins have access.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_staff:
+            return False
+            
+        try:
+            profile = AdminProfile.objects.get(user=request.user)
+            return profile.role in ['Super Admin', 'Finance']
+        except AdminProfile.DoesNotExist:
+            return True # Legacy fallback
 
 class IsTeacherUser(permissions.BasePermission):
     def has_permission(self, request, view):

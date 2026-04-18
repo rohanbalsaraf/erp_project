@@ -14,6 +14,7 @@ const FacultyManagement = ({ user }) => {
     name: '',
     email: '',
     department: '',
+    role: 'Assistant Professor',
   });
 
   const fetchFaculty = async () => {
@@ -42,7 +43,7 @@ const FacultyManagement = ({ user }) => {
         setIsModalOpen(false);
         setSuccess('');
       }, 3000);
-      setNewFaculty({ employee_id: '', name: '', email: '', department: '' });
+      setNewFaculty({ employee_id: '', name: '', email: '', department: '', role: 'Assistant Professor' });
       fetchFaculty();
     } catch (err) {
       const msg = err.response?.data?.detail || 
@@ -144,6 +145,21 @@ const FacultyManagement = ({ user }) => {
                   <option value="Computer Science">Computer Science</option>
                   <option value="Information Technology">Information Technology</option>
                   <option value="Mechanical Engineering">Mechanical Engineering</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Faculty Role</label>
+                <select
+                  required
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                  value={newFaculty.role}
+                  onChange={(e) => setNewFaculty({...newFaculty, role: e.target.value})}
+                >
+                  <option value="HOD">Head of Department (HOD)</option>
+                  <option value="Senior Professor">Senior Professor</option>
+                  <option value="Assistant Professor">Assistant Professor</option>
+                  <option value="Guest Lecturer">Guest Lecturer</option>
                 </select>
               </div>
 
