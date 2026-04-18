@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import api from '../api';
+import api from '../services/api';
 import { FileText, Upload, Plus, X, Trash2, Calendar, User as UserIcon, Tag } from 'lucide-react';
 
-const DocumentManagement = () => {
-  const { user } = useAuth();
+const DocumentManagement = ({ user }) => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
