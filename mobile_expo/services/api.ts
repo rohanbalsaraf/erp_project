@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 // Dynamically handle localhost testing based on mobile OS
 // Replace this with your actual local IP (e.g., 'http://192.168.1.5:8000') if testing on a physical scanner!
-const DEV_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8000/api' : 'http://127.0.0.1:8000/api';
+const DEV_URL = Platform.OS === 'android' ? 'http://192.168.0.104:8000/api' : 'http://192.168.0.104:8000/api';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || DEV_URL;
 
 class ApiService {

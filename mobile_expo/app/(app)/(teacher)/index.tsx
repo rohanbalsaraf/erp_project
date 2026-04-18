@@ -36,6 +36,20 @@ export default function TeacherDashboard() {
           <MaterialIcons name="event-note" size={32} color="#F59E0B" />
           <Text style={styles.cardTitle}>My Timetable</Text>
         </TouchableOpacity>
+
+        <Link href="/(app)/notices" asChild>
+          <TouchableOpacity style={styles.card}>
+            <MaterialIcons name="notifications-active" size={32} color="#EF4444" />
+            <Text style={styles.cardTitle}>Notice Board</Text>
+          </TouchableOpacity>
+        </Link>
+
+        <Link href="/(app)/documents" asChild>
+          <TouchableOpacity style={styles.card}>
+            <MaterialIcons name="cloud-download" size={32} color="#3B82F6" />
+            <Text style={styles.cardTitle}>Document Vault</Text>
+          </TouchableOpacity>
+        </Link>
       </View>
     </ScrollView>
   );

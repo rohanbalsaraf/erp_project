@@ -28,7 +28,7 @@ export default function LoginScreen() {
       // Fetch JWT via Django Token Endpoint
       const response = await api.post('/token/', { username, password });
       const { access } = response.data;
-      
+
       // Fetch Profile via API to determine Role
       const profileRes = await api.get('/profile/', access);
       const userProfile = profileRes.data;
@@ -50,7 +50,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
@@ -86,8 +86,8 @@ export default function LoginScreen() {
           />
         </View>
 
-        <TouchableOpacity 
-          style={styles.loginButton} 
+        <TouchableOpacity
+          style={styles.loginButton}
           onPress={handleLogin}
           disabled={loading}
         >
@@ -97,7 +97,7 @@ export default function LoginScreen() {
             <Text style={styles.loginButtonText}>AUTHENTICATE</Text>
           )}
         </TouchableOpacity>
-        
+
         <Text style={styles.footerText}>Secure System Connected to Supabase Cloud</Text>
       </View>
     </KeyboardAvoidingView>
