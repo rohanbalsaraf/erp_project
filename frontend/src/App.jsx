@@ -18,6 +18,7 @@ import Projects from './pages/Projects'
 import Fees from './pages/Fees'
 import Leaves from './pages/Leaves'
 import SalaryManagement from './pages/SalaryManagement'
+import DocumentManagement from './pages/DocumentManagement'
 import api from './services/api'
 
 // Refined Dashboard Component with Real Data
@@ -233,7 +234,7 @@ function AppContent() {
             <Route path="/leaves" element={<Leaves user={user} />} />
             <Route path="/fees" element={<Fees user={user} />} />
             <Route path="/salaries" element={<SalaryManagement user={user} />} />
-            <Route path="/documents" element={<div className="p-12 font-black text-gray-300 uppercase tracking-widest text-xl">Operational Document Vault Active</div>} />
+            <Route path="/documents" element={<DocumentManagement user={user} />} />
           </Routes>
         </main>
       </div>

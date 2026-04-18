@@ -4,7 +4,7 @@ from .views import (
     AttendanceListView, AssignmentListView, AssignmentSubmissionListView, 
     ProjectListView, ProjectDetailView, LeaveListView, LeaveDetailView,
     FeeListView, SalaryListView, NotificationListView, NotificationDetailView, TimetableListView, 
-    ResultListView, DashboardStatsView
+    ResultListView, DashboardStatsView, DocumentListView
 )
 
 urlpatterns = [
@@ -26,4 +26,5 @@ urlpatterns = [
     path('timetable/', TimetableListView.as_view(), name='timetable-list'),
     path('results/', ResultListView.as_view(), name='result-list'),
     path('salaries/', SalaryListView.as_view(), name='salary-list'),
+    path('documents/', DocumentListView.as_view(), name='document-list'),
 ]

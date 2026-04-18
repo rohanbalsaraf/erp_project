@@ -14,6 +14,8 @@ from .serializers import (
     LeaveSerializer, FeeSerializer, SalarySerializer, DocumentSerializer, UserRegistrationSerializer
 )
 from .permissions import IsAdminUser, IsTeacherUser, IsStudentUser, AdminOnlyCreation, IsAdminOrTeacher, FacultyOrAdminCreation
+from .storage import upload_to_supabase
+
 
 class UserProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -156,6 +158,21 @@ class AssignmentSubmissionListView(generics.ListCreateAPIView):
     queryset = AssignmentSubmission.objects.all()
     serializer_class = AssignmentSubmissionSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        
+        if 'file' in request.FILES:
+            file_obj = request.FILES['file']
+            url = upload_to_supabase(file_obj, bucket_name="erp_documents")
+            if url:
+                data['file_link'] = url
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def get_queryset(self):
         user = self.request.user
@@ -255,6 +272,42 @@ class NotificationDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
     permission_classes = [IsAdminUser]
+
+class TimetableDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Timetable.objects.all()
+    serializer_class = TimetableSerializer
+    permission_classes = [FacultyOrAdminCreation]
+
+# --- DOCUMENT VAULT ---
+class DocumentListView(generics.ListCreateAPIView):
+    queryset = Document.objects.all().order_by('-date_uploaded')
+    serializer_class = DocumentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        # We explicitly lock creation to admins/staff at the logic level
+        if not request.user.is_staff:
+            return Response({"detail": "Only administrators can upload root documents."}, status=status.HTTP_403_FORBIDDEN)
+
+        data = request.data.copy()
+        data['uploaded_by'] = request.user.id
+        
+        if 'file' in request.FILES:
+            file_obj = request.FILES['file']
+            url = upload_to_supabase(file_obj, bucket_name="erp_documents")
+            if url:
+                data['file_url'] = url
+            else:
+                return Response({"detail": "Cloud upload failed."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response({"detail": "No physical file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
 class TimetableListView(generics.ListCreateAPIView):
     queryset = Timetable.objects.all()
