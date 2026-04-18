@@ -35,6 +35,16 @@ const NoticeBoard = ({ user }) => {
     }
   };
 
+  const handleDeleteNotice = async (id) => {
+    if (!window.confirm('Are you sure you want to permanently remove this announcement?')) return;
+    try {
+      await api.delete(`/notifications/${id}/`);
+      fetchNotices();
+    } catch (err) {
+      alert('Failed to delete notice. Only authorized Admins can perform this action.');
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
@@ -130,7 +140,10 @@ const NoticeBoard = ({ user }) => {
                   </div>
                 </div>
                 {user?.role === 'admin' && (
-                  <button className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 transition-all rounded-lg">
+                  <button 
+                    onClick={() => handleDeleteNotice(notice.id)}
+                    className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 transition-all rounded-lg"
+                  >
                     <Trash2 size={20} />
                   </button>
                 )}

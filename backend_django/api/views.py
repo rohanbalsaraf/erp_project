@@ -1,41 +1,46 @@
-from rest_framework import generics
+from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .models import Student, Faculty, Attendance, Notification, Timetable, Result
-from .serializers import (
-    StudentSerializer, 
-    AttendanceSerializer, 
-    TimetableSerializer, 
-    NotificationSerializer, 
-    FacultySerializer,
-    ResultSerializer
+from django.contrib.auth.models import User
+from django.db.models import Count, Q, Sum
+from .models import (
+    Student, Faculty, Attendance, Notification, Timetable, Result,
+    Assignment, AssignmentSubmission, Project, Leave, Fee, Salary, Document
 )
+from .serializers import (
+    StudentSerializer, AttendanceSerializer, TimetableSerializer, 
+    NotificationSerializer, FacultySerializer, ResultSerializer,
+    AssignmentSerializer, AssignmentSubmissionSerializer, ProjectSerializer, 
+    LeaveSerializer, FeeSerializer, SalarySerializer, DocumentSerializer, UserRegistrationSerializer
+)
+from .permissions import IsAdminUser, IsTeacherUser, IsStudentUser, AdminOnlyCreation, IsAdminOrTeacher, FacultyOrAdminCreation
 
 class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         user = request.user
         data = {
+            "id": user.id,
             "username": user.username,
             "email": user.email,
             "role": "admin" if user.is_staff else "user"
         }
         
-        # Check for specific profiles
         try:
             student = Student.objects.get(user=user)
             data["role"] = "student"
             data["profile"] = {
+                "id": student.id,
                 "student_id": student.student_id,
                 "department": student.department
             }
         except Student.DoesNotExist:
             try:
                 faculty = Faculty.objects.get(user=user)
-                data["role"] = "faculty"
+                data["role"] = "teacher"
                 data["profile"] = {
+                    "id": faculty.id,
                     "employee_id": faculty.employee_id,
                     "department": faculty.department
                 }
@@ -44,15 +49,83 @@ class UserProfileView(APIView):
                 
         return Response(data)
 
-class StudentListView(generics.ListCreateAPIView):
-    queryset = Student.objects.all()
-    serializer_class = StudentSerializer
-    permission_classes = [IsAuthenticated]
+class DashboardStatsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get(self, request):
+        user = request.user
+        stats = {}
+
+        if user.is_staff: # Admin
+            stats = {
+                "role": "admin",
+                "total_students": Student.objects.count(),
+                "total_faculty": Faculty.objects.count(),
+                "pending_leaves": Leave.objects.filter(applicant_type='Teacher', status='Pending').count(),
+                "total_documents": Document.objects.count(),
+                "total_salary_paid": Salary.objects.filter(status='Paid').aggregate(Sum('amount'))['amount__sum'] or 0
+            }
+        else:
+            try:
+                faculty = Faculty.objects.get(user=user)
+                stats = {
+                    "role": "teacher",
+                    "my_students": Student.objects.filter(department=faculty.department).count(),
+                    "assignments_posted": Assignment.objects.filter(teacher=faculty).count(),
+                    "projects_tracked": Project.objects.filter(student__department=faculty.department).count(),
+                    "attendance_avg": "88%" # Simplified for now
+                }
+            except Faculty.DoesNotExist:
+                try:
+                    student = Student.objects.get(user=user)
+                    total_attendance = Attendance.objects.filter(student=student).count()
+                    present_count = Attendance.objects.filter(student=student, status='Present').count()
+                    attendance_pct = (present_count / total_attendance * 100) if total_attendance > 0 else 0
+                    
+                    stats = {
+                        "role": "student",
+                        "attendance": f"{int(attendance_pct)}%",
+                        "pending_assignments": Assignment.objects.filter(department=student.department).count(),
+                        "my_projects": Project.objects.filter(student=student).count(),
+                        "pending_fees": Fee.objects.filter(student=student, status='Unpaid').count()
+                    }
+                except Student.DoesNotExist:
+                    stats = {"role": "unknown"}
+
+        return Response(stats)
+
+# --- ADMIN VIEW: Add Teacher ---
+class FacultyListView(generics.ListCreateAPIView):
+    queryset = Faculty.objects.all()
+    serializer_class = FacultySerializer
+    permission_classes = [IsAdminUser]
+
+# --- TEACHER VIEW: Add Student (Automated Credentials) ---
+class StudentListView(generics.ListCreateAPIView):
+    serializer_class = StudentSerializer
+    permission_classes = [FacultyOrAdminCreation]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Student.objects.all()
+        try:
+            faculty = Faculty.objects.get(user=user)
+            return Student.objects.filter(department=faculty.department)
+        except Faculty.DoesNotExist:
+            return Student.objects.none()
+
+# --- REGISTRATION VIEW (Public) ---
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserRegistrationSerializer
+    permission_classes = [permissions.AllowAny]
+
+# --- ATTENDANCE (Teacher manages, Student views) ---
 class AttendanceListView(generics.ListCreateAPIView):
     queryset = Attendance.objects.all()
     serializer_class = AttendanceSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [FacultyOrAdminCreation]
 
     def get_queryset(self):
         user = self.request.user
@@ -62,51 +135,124 @@ class AttendanceListView(generics.ListCreateAPIView):
             student = Student.objects.get(user=user)
             return Attendance.objects.filter(student=student)
         except Student.DoesNotExist:
-            return Attendance.objects.none()
+            return Attendance.objects.all()
 
-class FacultyListView(generics.ListCreateAPIView):
-    queryset = Faculty.objects.all()
-    serializer_class = FacultySerializer
-    permission_classes = [IsAuthenticated]
+# --- ASSIGNMENTS & SUBMISSIONS ---
+class AssignmentListView(generics.ListCreateAPIView):
+    queryset = Assignment.objects.all()
+    serializer_class = AssignmentSerializer
+    permission_classes = [FacultyOrAdminCreation]
 
-class NotificationListView(generics.ListCreateAPIView):
-    queryset = Notification.objects.all().order_by('-date')
-    serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
-
-class TimetableListView(generics.ListAPIView):
-    queryset = Timetable.objects.all()
-    serializer_class = TimetableSerializer
-    permission_classes = [IsAuthenticated]
+class AssignmentSubmissionListView(generics.ListCreateAPIView):
+    queryset = AssignmentSubmission.objects.all()
+    serializer_class = AssignmentSubmissionSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        dept = None
+        if user.is_staff:
+            return AssignmentSubmission.objects.all()
+        try:
+            faculty = Faculty.objects.get(user=user)
+            return AssignmentSubmission.objects.filter(assignment__teacher=faculty)
+        except Faculty.DoesNotExist:
+            try:
+                student = Student.objects.get(user=user)
+                return AssignmentSubmission.objects.filter(student=student)
+            except Student.DoesNotExist:
+                return AssignmentSubmission.objects.none()
+
+# --- PROJECTS (Teacher manages, Student views/updates own) ---
+class ProjectListView(generics.ListCreateAPIView):
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
         try:
             student = Student.objects.get(user=user)
-            dept = student.department
+            return Project.objects.filter(student=student)
         except Student.DoesNotExist:
+            return Project.objects.all()
+
+class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+# --- LEAVE MANAGEMENT ---
+class LeaveListView(generics.ListCreateAPIView):
+    serializer_class = LeaveSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            # Admins focus exclusively on staff (Teachers)
+            return Leave.objects.filter(applicant_type='Teacher')
+            
+        try:
+            faculty = Faculty.objects.get(user=user)
+            # Teachers see all Students + their own record
+            return Leave.objects.filter(
+                Q(applicant_type='Student') | 
+                Q(applicant_type='Teacher', applicant_id=faculty.id)
+            )
+        except Faculty.DoesNotExist:
             try:
-                faculty = Faculty.objects.get(user=user)
-                dept = faculty.department
-            except Faculty.DoesNotExist:
-                pass
-        
-        if dept:
-            return Timetable.objects.filter(department=dept)
-        return Timetable.objects.all()
+                student = Student.objects.get(user=user)
+                # Students remain siloed to their own requests
+                return Leave.objects.filter(applicant_type='Student', applicant_id=student.id)
+            except Student.DoesNotExist:
+                return Leave.objects.none()
+
+class LeaveDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Leave.objects.all()
+    serializer_class = LeaveSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class FeeListView(generics.ListCreateAPIView):
+    queryset = Fee.objects.all()
+    serializer_class = FeeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        try:
+            student = Student.objects.get(user=user)
+            return Fee.objects.filter(student=student)
+        except Student.DoesNotExist:
+            return Fee.objects.all()
+
+class SalaryListView(generics.ListCreateAPIView):
+    queryset = Salary.objects.all()
+    serializer_class = SalarySerializer
+    permission_classes = [AdminOnlyCreation]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_staff:
+            return Salary.objects.filter(user=user)
+        return Salary.objects.all()
+
+# --- NOTIFICATIONS & TIMETABLE ---
+class NotificationListView(generics.ListCreateAPIView):
+    queryset = Notification.objects.all().order_by('-date')
+    serializer_class = NotificationSerializer
+    permission_classes = [FacultyOrAdminCreation]
+
+class NotificationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAdminUser]
+
+class TimetableListView(generics.ListCreateAPIView):
+    queryset = Timetable.objects.all()
+    serializer_class = TimetableSerializer
+    permission_classes = [FacultyOrAdminCreation]
 
 class ResultListView(generics.ListAPIView):
     queryset = Result.objects.all()
     serializer_class = ResultSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        try:
-            student = Student.objects.get(user=user)
-            return Result.objects.filter(student=student)
-        except Student.DoesNotExist:
-            if user.is_staff:
-                return Result.objects.all()
-            return Result.objects.none()
+    permission_classes = [permissions.IsAuthenticated]

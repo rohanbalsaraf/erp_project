@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Users, Search, Plus, MoreVertical, Mail, Phone, BookOpen } from 'lucide-react';
+import { Users, Search, Plus, MoreVertical, Mail, Phone, BookOpen, X, CheckCircle2 } from 'lucide-react';
 import api from '../services/api';
 
-const StudentsList = () => {
+const StudentsList = ({ user }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [newStudent, setNewStudent] = useState({
     student_id: '',
     name: '',
     email: '',
     phone: '',
-    department: '',
+    department: user?.profile?.department || '',
     division: '',
     category: ''
   });
@@ -34,21 +36,31 @@ const StudentsList = () => {
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     try {
-      await api.post('/students/', newStudent);
-      setIsModalOpen(false);
+      await api.post('/students/', {
+        ...newStudent,
+        department: user?.profile?.department || newStudent.department
+      });
+      setSuccess('Student added! Welcome email with credentials sent.');
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setSuccess('');
+      }, 3000);
       setNewStudent({
         student_id: '',
         name: '',
         email: '',
         phone: '',
-        department: '',
+        department: user?.profile?.department || '',
         division: '',
         category: ''
       });
       fetchStudents();
     } catch (err) {
-      alert('Failed to add student');
+      const msg = err.response?.data ? Object.values(err.response.data)[0] : 'Failed to add student';
+      setError(Array.isArray(msg) ? msg[0] : msg);
     }
   };
 
@@ -64,13 +76,15 @@ const StudentsList = () => {
           <h1 className="text-3xl font-bold text-gray-900">Students</h1>
           <p className="text-gray-500 mt-1">Manage all enrolled students from here</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center space-x-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-        >
-          <Plus size={20} />
-          <span>Add Student</span>
-        </button>
+        {(user?.role === 'admin' || user?.role === 'teacher') && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center space-x-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+          >
+            <Plus size={20} />
+            <span>Add Student</span>
+          </button>
+        )}
       </div>
 
       {/* Add Student Modal */}
@@ -85,9 +99,21 @@ const StudentsList = () => {
             </div>
             
             <form onSubmit={handleAddStudent} className="p-8 space-y-6">
+              {success && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-2xl flex items-center space-x-3 text-green-600">
+                  <CheckCircle2 className="bg-green-600 text-white rounded-full p-1" size={16} />
+                  <span className="text-sm font-bold uppercase tracking-tight">{success}</span>
+                </div>
+              )}
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center space-x-3 text-red-600">
+                  <X className="bg-red-600 text-white rounded-full p-1" size={16} />
+                  <span className="text-sm font-bold uppercase tracking-tight">{error}</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Student ID (Auth Username)</label>
                   <input
                     type="text"
                     required
@@ -134,7 +160,8 @@ const StudentsList = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
                   <select
                     required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    disabled={user?.role === 'teacher'}
+                    className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all ${user?.role === 'teacher' ? 'bg-gray-100 cursor-not-allowed opacity-75' : 'bg-gray-50'}`}
                     value={newStudent.department}
                     onChange={(e) => setNewStudent({...newStudent, department: e.target.value})}
                   >
@@ -143,6 +170,9 @@ const StudentsList = () => {
                     <option value="Information Technology">Information Technology</option>
                     <option value="Mechanical Engineering">Mechanical Engineering</option>
                   </select>
+                  {user?.role === 'teacher' && (
+                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest">Locked to your department</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Division</label>
@@ -154,6 +184,22 @@ const StudentsList = () => {
                     value={newStudent.division}
                     onChange={(e) => setNewStudent({...newStudent, division: e.target.value})}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Student Category</label>
+                  <select
+                    required
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    value={newStudent.category}
+                    onChange={(e) => setNewStudent({...newStudent, category: e.target.value})}
+                  >
+                    <option value="">Select Category</option>
+                    <option value="General">General</option>
+                    <option value="OBC">OBC</option>
+                    <option value="SC">SC</option>
+                    <option value="ST">ST</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
               </div>
 

@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { UserCog, Search, Plus, MoreVertical, Mail, Phone, BookOpen, GraduationCap } from 'lucide-react';
+import { UserCog, Search, Plus, MoreVertical, Mail, Phone, BookOpen, GraduationCap, CheckCircle2, X } from 'lucide-react';
 import api from '../services/api';
 
-const FacultyManagement = () => {
+const FacultyManagement = ({ user }) => {
   const [faculty, setFaculty] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [newFaculty, setNewFaculty] = useState({
     employee_id: '',
     name: '',
@@ -31,13 +33,21 @@ const FacultyManagement = () => {
 
   const handleAddFaculty = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     try {
       await api.post('/faculty/', newFaculty);
-      setIsModalOpen(false);
+      setSuccess('Member added! Welcome email sent to teacher.');
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setSuccess('');
+      }, 3000);
       setNewFaculty({ employee_id: '', name: '', email: '', department: '' });
       fetchFaculty();
     } catch (err) {
-      alert('Failed to add faculty');
+      const msg = err.response?.data?.detail || 
+                  (err.response?.data ? Object.values(err.response.data)[0] : 'Failed to add faculty');
+      setError(Array.isArray(msg) ? msg[0] : msg);
     }
   };
 
@@ -53,13 +63,15 @@ const FacultyManagement = () => {
           <h1 className="text-3xl font-bold text-gray-900">Faculty Management</h1>
           <p className="text-gray-500 mt-1">Manage all instructors and department staff</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center space-x-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-        >
-          <Plus size={20} />
-          <span>Add Faculty</span>
-        </button>
+        {user?.role === 'admin' && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center space-x-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+          >
+            <Plus size={20} />
+            <span>Add Faculty</span>
+          </button>
+        )}
       </div>
 
       {/* Add Faculty Modal */}
@@ -68,18 +80,31 @@ const FacultyManagement = () => {
           <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
               <h2 className="text-xl font-bold text-gray-900">Add New Faculty</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <Search size={20} className="rotate-45" /> {/* Using Search as X surrogate here, will fix with X in next pass if needed */}
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <Search size={20} className="rotate-45 text-gray-400" />
               </button>
             </div>
             
             <form onSubmit={handleAddFaculty} className="p-8 space-y-6">
+              {success && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-2xl flex items-center space-x-3 text-green-600 animate-pulse">
+                  <CheckCircle2 className="bg-green-600 text-white rounded-full p-1" size={16} />
+                  <span className="text-sm font-bold uppercase tracking-tight">{success}</span>
+                </div>
+              )}
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center space-x-3 text-red-600">
+                  <UserCog className="bg-red-600 text-white rounded-full p-1" size={16} />
+                  <span className="text-sm font-bold uppercase tracking-tight">{error}</span>
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Employee ID</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 font-bold tracking-tight uppercase text-xs">Employee ID</label>
                 <input
                   type="text"
                   required
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   placeholder="e.g. EMP101"
                   value={newFaculty.employee_id}
                   onChange={(e) => setNewFaculty({...newFaculty, employee_id: e.target.value})}
