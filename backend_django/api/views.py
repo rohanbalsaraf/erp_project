@@ -54,9 +54,13 @@ class UserProfileView(APIView):
                     try:
                         admin_prof = AdminProfile.objects.get(user=user)
                         data["sub_role"] = admin_prof.role
-                        data["department"] = admin_prof.department
+                        data["profile"] = {
+                            "department": admin_prof.department,
+                            "role": admin_prof.role
+                        }
                     except AdminProfile.DoesNotExist:
                         data["sub_role"] = "Super Admin"
+                        data["profile"] = { "department": None, "role": "Super Admin" }
                 
         return Response(data)
 
@@ -118,14 +122,13 @@ class StudentListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         user = self.request.user
-        if not user.is_staff:
-            try:
-                faculty = Faculty.objects.get(user=user)
-                # Auto-assign teacher's department for real-time sync
-                serializer.save(department=faculty.department)
-            except Faculty.DoesNotExist:
-                serializer.save()
+        # Enforce departmental scope for both Faculty and departmental Admins
+        if hasattr(user, 'faculty_profile'):
+            serializer.save(department=user.faculty_profile.department)
+        elif hasattr(user, 'admin_profile') and user.admin_profile.department:
+            serializer.save(department=user.admin_profile.department)
         else:
+            # Super admins or admins without a specific department can assign freely
             serializer.save()
 
     def get_queryset(self):

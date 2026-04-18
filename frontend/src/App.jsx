@@ -84,6 +84,43 @@ const DashboardHome = ({ user }) => {
         ))}
       </div>
 
+      {(user?.role === 'admin' || user?.role === 'teacher') && (
+        <div className="mb-10">
+          <h3 className="text-xl font-black text-gray-900 mb-6 uppercase tracking-tight">Command Center</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Link to="/students" className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all flex items-center space-x-4 group">
+              <div className="p-3 bg-green-50 text-green-600 rounded-2xl group-hover:scale-110 transition-transform">
+                <Users size={24} />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900">New Admission</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Register New Student</p>
+              </div>
+            </Link>
+            
+            <Link to="/attendance" className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all flex items-center space-x-4 group">
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:scale-110 transition-transform">
+                <ClipboardList size={24} />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900">Mark Attendance</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Roll Call Portal</p>
+              </div>
+            </Link>
+
+            <Link to="/notifications" className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all flex items-center space-x-4 group">
+              <div className="p-3 bg-pink-50 text-pink-600 rounded-2xl group-hover:scale-110 transition-transform">
+                <Bell size={24} />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900">Post Notice</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Communication Hub</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Role-Specific Activity Chart Placeholder */}
       <div className="bg-white p-10 rounded-[3rem] border border-gray-50 shadow-sm relative overflow-hidden">
         <h3 className="text-xl font-black text-gray-900 mb-8 uppercase tracking-tight">Analytical Trends</h3>

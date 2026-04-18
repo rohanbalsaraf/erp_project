@@ -19,6 +19,13 @@ const StudentsList = ({ user }) => {
     category: ''
   });
 
+  // PRE-FILL DEPARTMENT IF USER IS RESTRICTED
+  useEffect(() => {
+    if (user?.profile?.department) {
+      setNewStudent(prev => ({ ...prev, department: user.profile.department }));
+    }
+  }, [user]);
+
   const fetchStudents = async () => {
     try {
       const res = await api.get('/students/');
@@ -160,8 +167,8 @@ const StudentsList = ({ user }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
                   <select
                     required
-                    disabled={user?.role === 'teacher'}
-                    className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all ${user?.role === 'teacher' ? 'bg-gray-100 cursor-not-allowed opacity-75' : 'bg-gray-50'}`}
+                    disabled={!!user?.profile?.department}
+                    className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all ${user?.profile?.department ? 'bg-gray-100 cursor-not-allowed opacity-75 text-gray-500' : 'bg-gray-50'}`}
                     value={newStudent.department}
                     onChange={(e) => setNewStudent({...newStudent, department: e.target.value})}
                   >
@@ -170,8 +177,10 @@ const StudentsList = ({ user }) => {
                     <option value="Information Technology">Information Technology</option>
                     <option value="Mechanical Engineering">Mechanical Engineering</option>
                   </select>
-                  {user?.role === 'teacher' && (
-                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest">Locked to your department</p>
+                  {user?.profile?.department && (
+                    <p className="text-[10px] text-indigo-500 mt-1 uppercase font-bold tracking-widest flex items-center gap-1">
+                      <CheckCircle2 size={10} /> Locked to your department scope
+                    </p>
                   )}
                 </div>
                 <div>
