@@ -9,7 +9,7 @@ from .models import (
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = '__all__'
+        fields = ['id', 'user', 'role', 'student_id', 'enrollment_id', 'name', 'email', 'phone', 'department', 'division', 'category', 'address', 'guardian_name', 'dob']
         extra_kwargs = {'user': {'read_only': True}}
 
     def create(self, validated_data):

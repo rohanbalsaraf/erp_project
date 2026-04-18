@@ -20,10 +20,19 @@ export default function TeacherDashboard() {
       </View>
 
       <View style={styles.grid}>
+        {user?.role === 'admin' && (
+          <Link href="/(app)/(teacher)/admission" asChild>
+            <TouchableOpacity style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#10B981' }]}>
+              <MaterialIcons name="person-add" size={32} color="#10B981" />
+              <Text style={styles.cardTitle}>New Admission</Text>
+            </TouchableOpacity>
+          </Link>
+        )}
+
         <Link href="/(app)/(teacher)/add-student" asChild>
-          <TouchableOpacity style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#10B981' }]}>
-            <MaterialIcons name="person-add" size={32} color="#10B981" />
-            <Text style={styles.cardTitle}>New Admission</Text>
+          <TouchableOpacity style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#4F46E5' }]}>
+            <MaterialIcons name="sort" size={32} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Division Sorting</Text>
           </TouchableOpacity>
         </Link>
 

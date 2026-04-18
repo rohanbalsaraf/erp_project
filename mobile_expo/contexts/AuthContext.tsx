@@ -5,6 +5,11 @@ type UserData = {
   username: string;
   role: string;
   sub_role?: string;
+  profile?: {
+    id?: number;
+    department?: string | null;
+    [key: string]: any;
+  };
 };
 
 type AuthContextType = {

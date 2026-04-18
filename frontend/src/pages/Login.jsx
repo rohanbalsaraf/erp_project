@@ -8,7 +8,33 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryResult, setRecoveryResult] = useState(null);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryError, setRecoveryError] = useState('');
   const navigate = useNavigate();
+
+  const handleRecover = async () => {
+    if (!recoveryEmail) {
+      setRecoveryError('Please enter your email');
+      return;
+    }
+    setRecoveryLoading(true);
+    setRecoveryError('');
+    setRecoveryResult(null);
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/recover-credentials/', {
+        email: recoveryEmail,
+      });
+      setRecoveryResult(response.data);
+    } catch (err) {
+      setRecoveryError(err.response?.data?.detail || 'Recovery failed. Check your email address.');
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -97,11 +123,77 @@ const Login = () => {
           </button>
         </form>
 
+        <div className="mt-6 text-center">
+          <button 
+            onClick={() => setShowRecovery(true)}
+            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+          >
+            Forgot User ID or Password?
+          </button>
+        </div>
+
         <p className="text-center mt-8 text-sm font-bold text-gray-400">
           Don't have an account?{' '}
           <Link to="/register" className="text-indigo-600 hover:underline">Sign Up</Link>
         </p>
       </div>
+
+      {showRecovery && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-gray-100">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Reset Credentials</h3>
+            <p className="text-gray-500 mb-6 font-medium">Enter your registered email address to recover your account.</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
+                <input
+                  type="email"
+                  className="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
+                  placeholder="name@example.com"
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value)}
+                />
+              </div>
+
+              {recoveryResult && (
+                <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl">
+                  <p className="text-sm text-indigo-700 font-bold mb-1">Recovery Details:</p>
+                  <p className="text-sm text-gray-700 font-medium">ID: <span className="font-mono bg-indigo-100 px-1 rounded">{recoveryResult.username}</span></p>
+                  <p className="text-sm text-gray-700 font-medium mt-1">Temp Pass: <span className="font-mono bg-indigo-100 px-1 rounded">{recoveryResult.new_password}</span></p>
+                  <p className="text-xs text-indigo-600 mt-2 font-bold italic">Please change this password after logging in.</p>
+                </div>
+              )}
+
+              {recoveryError && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm border border-red-100 font-medium">
+                  {recoveryError}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowRecovery(false);
+                    setRecoveryResult(null);
+                    setRecoveryError('');
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-all"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleRecover}
+                  disabled={recoveryLoading}
+                  className="flex-1 bg-indigo-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50"
+                >
+                  {recoveryLoading ? 'Searching...' : 'Recover'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

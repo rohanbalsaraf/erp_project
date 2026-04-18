@@ -39,6 +39,18 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async patch(endpoint: string, data: any, token?: string) {
+    const headers = await this.getHeaders();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
   private async handleResponse(response: Response) {
     const text = await response.text();
     let data;

@@ -4,7 +4,7 @@ from .views import (
     AttendanceListView, AssignmentListView, AssignmentSubmissionListView, 
     ProjectListView, ProjectDetailView, LeaveListView, LeaveDetailView,
     FeeListView, SalaryListView, NotificationListView, NotificationDetailView, TimetableListView, 
-    ResultListView, DashboardStatsView, DocumentListView
+    ResultListView, DashboardStatsView, DocumentListView, StudentDetailView, RecoverCredentialsView
 )
 
 urlpatterns = [
@@ -12,6 +12,7 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='user-profile'),
     path('dashboard-stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
     path('students/', StudentListView.as_view(), name='student-list'),
+    path('students/<int:pk>/', StudentDetailView.as_view(), name='student-detail'),
     path('faculty/', FacultyListView.as_view(), name='faculty-list'),
     path('attendance/', AttendanceListView.as_view(), name='attendance-list'),
     path('assignments/', AssignmentListView.as_view(), name='assignment-list'),
@@ -25,6 +26,7 @@ urlpatterns = [
     path('notifications/<int:pk>/', NotificationDetailView.as_view(), name='notification-detail'),
     path('timetable/', TimetableListView.as_view(), name='timetable-list'),
     path('results/', ResultListView.as_view(), name='result-list'),
+    path('recover-credentials/', RecoverCredentialsView.as_view(), name='recover-credentials'),
     path('salaries/', SalaryListView.as_view(), name='salary-list'),
     path('documents/', DocumentListView.as_view(), name='document-list'),
 ]

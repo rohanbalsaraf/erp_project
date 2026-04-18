@@ -55,11 +55,21 @@ class AdminOnlyCreation(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
             
-        return bool(request.user.is_staff)
+        if not request.user.is_staff:
+            return False
+            
+        try:
+            from .models import AdminProfile
+            profile = AdminProfile.objects.get(user=request.user)
+            return profile.role in ['Super Admin', 'Registrar']
+        except AdminProfile.DoesNotExist:
+            # Fallback for superusers who might not have an AdminProfile record
+            return request.user.is_superuser
 
 class FacultyOrAdminCreation(permissions.BasePermission):
     """
     Allow anyone authenticated to view, but only Faculty or Admin to create (POST).
+    DEPRECATED: We are moving to AdminOnlyCreation for students.
     """
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
@@ -72,3 +82,19 @@ class FacultyOrAdminCreation(permissions.BasePermission):
             return True
             
         return Faculty.objects.filter(user=request.user).exists()
+
+class CanUpdateStudentDivision(permissions.BasePermission):
+    """
+    Custom permission to allow teachers to update only students in their department.
+    """
+    def has_object_permission(self, request, view, obj):
+        # Admins can do anything
+        if request.user.is_staff:
+            return True
+            
+        # Teachers can only update students in their own department
+        try:
+            faculty = Faculty.objects.get(user=request.user)
+            return obj.department == faculty.department
+        except Faculty.DoesNotExist:
+            return False

@@ -89,12 +89,14 @@ const DashboardHome = ({ user }) => {
           <h3 className="text-xl font-black text-gray-900 mb-6 uppercase tracking-tight">Command Center</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Link to="/students" className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all flex items-center space-x-4 group">
-              <div className="p-3 bg-green-50 text-green-600 rounded-2xl group-hover:scale-110 transition-transform">
+              <div className={`p-3 rounded-2xl group-hover:scale-110 transition-transform ${user?.role === 'admin' ? 'bg-green-50 text-green-600' : 'bg-indigo-50 text-indigo-600'}`}>
                 <Users size={24} />
               </div>
               <div>
-                <p className="font-bold text-gray-900">New Admission</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Register New Student</p>
+                <p className="font-bold text-gray-900">{user?.role === 'admin' ? 'New Admission' : 'Division Sorting'}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">
+                  {user?.role === 'admin' ? 'Register New Student' : 'Assign Student Divisions'}
+                </p>
               </div>
             </Link>
             

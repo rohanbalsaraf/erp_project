@@ -49,6 +49,67 @@ export default function LoginScreen() {
     }
   };
 
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryResult, setRecoveryResult] = useState<{username: string, new_password: string} | null>(null);
+
+  const handleRecover = async () => {
+    if (!recoveryEmail) return;
+    setLoading(true);
+    setError('');
+    try {
+      const response = await api.post('/recover-credentials/', { email: recoveryEmail });
+      setRecoveryResult(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Recovery failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (isRecovering) {
+    return (
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+        <View style={styles.card}>
+          <Text style={styles.appTitle}>RECOVERY</Text>
+          <Text style={styles.subtitle}>Account Access Restoration</Text>
+          
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          {recoveryResult ? (
+            <View style={styles.resultBox}>
+              <Text style={styles.resultLabel}>User ID: <Text style={styles.resultValue}>{recoveryResult.username}</Text></Text>
+              <Text style={styles.resultLabel}>Temp Key: <Text style={styles.resultValue}>{recoveryResult.new_password}</Text></Text>
+              <Text style={styles.warningText}>Please login and update your password immediately.</Text>
+              <TouchableOpacity style={styles.loginButton} onPress={() => { setIsRecovering(false); setRecoveryResult(null); }}>
+                <Text style={styles.loginButtonText}>RETURN TO LOGIN</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Registered Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter email"
+                placeholderTextColor="#A0AEC0"
+                value={recoveryEmail}
+                onChangeText={setRecoveryEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <TouchableOpacity style={styles.loginButton} onPress={handleRecover} disabled={loading}>
+                {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.loginButtonText}>RECOVER ACCESS</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => setIsRecovering(false)}>
+                <Text style={styles.secondaryButtonText}>CANCEL</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -96,6 +157,10 @@ export default function LoginScreen() {
           ) : (
             <Text style={styles.loginButtonText}>AUTHENTICATE</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => { setIsRecovering(true); setError(''); }}>
+          <Text style={[styles.footerText, { color: '#4F46E5', marginTop: 15 }]}>Forgot credentials?</Text>
         </TouchableOpacity>
 
         <Text style={styles.footerText}>Secure System Connected to Supabase Cloud</Text>
@@ -197,5 +262,42 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: '#9CA3AF',
+  },
+  resultBox: {
+    backgroundColor: '#EEF2FF',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    marginBottom: 20,
+  },
+  resultLabel: {
+    fontSize: 14,
+    color: '#3730A3',
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  resultValue: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: '#111827',
+    fontWeight: '900',
+  },
+  warningText: {
+    fontSize: 11,
+    color: '#4F46E5',
+    fontWeight: '700',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  secondaryButton: {
+    marginTop: 12,
+    padding: 18,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
   }
 });

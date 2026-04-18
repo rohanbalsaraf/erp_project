@@ -2,6 +2,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth.models import User
+from django.utils.crypto import get_random_string
 from django.db.models import Count, Q, Sum
 from .models import (
     Student, Faculty, AdminProfile, Attendance, Notification, Timetable, Result,
@@ -13,7 +14,7 @@ from .serializers import (
     AssignmentSerializer, AssignmentSubmissionSerializer, ProjectSerializer, 
     LeaveSerializer, FeeSerializer, SalarySerializer, DocumentSerializer, UserRegistrationSerializer
 )
-from .permissions import IsAdminUser, IsTeacherUser, IsStudentUser, AdminOnlyCreation, IsAdminOrTeacher, FacultyOrAdminCreation
+from .permissions import IsAdminUser, IsTeacherUser, IsStudentUser, AdminOnlyCreation, IsAdminOrTeacher, FacultyOrAdminCreation, CanUpdateStudentDivision
 from .storage import upload_to_supabase
 
 
@@ -115,24 +116,17 @@ class FacultyListView(generics.ListCreateAPIView):
     serializer_class = FacultySerializer
     permission_classes = [IsAdminUser]
 
-# --- TEACHER VIEW: Add Student (Automated Credentials) ---
+# --- ADMIN ONLY: Admit Student & TEACHER: View Students ---
 class StudentListView(generics.ListCreateAPIView):
     serializer_class = StudentSerializer
-    permission_classes = [FacultyOrAdminCreation]
-
-    def perform_create(self, serializer):
-        user = self.request.user
-        # Enforce departmental scope for both Faculty and departmental Admins
-        if hasattr(user, 'faculty_profile'):
-            serializer.save(department=user.faculty_profile.department)
-        elif hasattr(user, 'admin_profile') and user.admin_profile.department:
-            serializer.save(department=user.admin_profile.department)
-        else:
-            # Super admins or admins without a specific department can assign freely
-            serializer.save()
+    # Only Admin can CREATE, but anyone can view based on get_queryset
+    permission_classes = [AdminOnlyCreation] 
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return Student.objects.none()
+            
         if user.is_staff:
             return Student.objects.all()
         try:
@@ -140,6 +134,11 @@ class StudentListView(generics.ListCreateAPIView):
             return Student.objects.filter(department=faculty.department)
         except Faculty.DoesNotExist:
             return Student.objects.none()
+
+class StudentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    permission_classes = [permissions.IsAuthenticated, CanUpdateStudentDivision]
 
 # --- REGISTRATION VIEW (Public) ---
 class RegisterView(generics.CreateAPIView):
@@ -333,3 +332,49 @@ class ResultListView(generics.ListAPIView):
     queryset = Result.objects.all()
     serializer_class = ResultSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+# --- RECOVERY VIEW: Forgot Password/ID ---
+class RecoverCredentialsView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({"detail": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Look up in Student, Faculty, and AdminProfile
+        users = []
+        
+        # Check Students
+        students = Student.objects.filter(email=email)
+        for s in students:
+            users.append(s.user)
+            
+        # Check Faculty
+        faculties = Faculty.objects.filter(email=email)
+        for f in faculties:
+            users.append(f.user)
+            
+        # AdminProfile doesn't have an email field, it uses User.email
+        # but the way we've set it up, they might be manually created.
+        admins = User.objects.filter(email=email, is_staff=True)
+        for u in admins:
+            if u not in users:
+                users.append(u)
+
+        if not users:
+            return Response({"detail": "No account found with this email."}, status=status.HTTP_404_NOT_FOUND)
+
+        # For this demo, we pick the first user found (or list them all)
+        # and reset their password to a new random string.
+        user = users[0]
+        new_password = get_random_string(length=8)
+        user.set_password(new_password)
+        user.save()
+
+        return Response({
+            "detail": "Credentials recovered successfully.",
+            "username": user.username,
+            "new_password": new_password,
+            "message": "NOTE: Your password has been reset. Please login and change it immediately."
+        }, status=status.HTTP_200_OK)
